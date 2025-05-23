@@ -7,7 +7,6 @@ public class Attachment
     public long AttachmentId { get; set; }
     public string FileName { get; set; }
     public string S3UploadName { get; set; } //=id.extension
-    public long DealId { get; set; }
     public long CreatedBy { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.Now;
     public ICollection<Deal> Deals { get; set; }

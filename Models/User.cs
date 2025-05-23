@@ -8,19 +8,13 @@ namespace XLead_Server.Models
         public long Id { get; set; }
         public string Name { get; set; }
 
-        // Self-referencing relationship
         public long? CreatedBy { get; set; }
 
         [ForeignKey("CreatedBy")]
         public User CreatedByUser { get; set; }
-
-        // Reverse navigation property
         public ICollection<User> CreatedUsers { get; set; }
-
         public long? AssignedTo { get; set; }
-
-        public DateTime CreatedAt { get; set; }
-
+        public DateTime CreatedAt { get; set; } = DateTime.Now;
         public ICollection<Attachment> Attachments { get; set; }
         public ICollection<Company> Companies { get; set; }
         public ICollection<Contact> Contacts { get; set; }

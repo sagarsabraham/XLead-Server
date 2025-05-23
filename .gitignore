@@ -15,7 +15,7 @@
 
 
 # Entity Framework Migrations
-XLeadServer/Migrations
+Migrations
 
 # Mono auto generated files
 mono_crash.*

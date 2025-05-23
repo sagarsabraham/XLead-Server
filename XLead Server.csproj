@@ -9,9 +9,13 @@
 
   <ItemGroup>
     <Compile Remove="NewFolder\**" />
+    <Compile Remove="XLeadServer\**" />
     <Content Remove="NewFolder\**" />
+    <Content Remove="XLeadServer\**" />
     <EmbeddedResource Remove="NewFolder\**" />
+    <EmbeddedResource Remove="XLeadServer\**" />
     <None Remove="NewFolder\**" />
+    <None Remove="XLeadServer\**" />
   </ItemGroup>
 
   <ItemGroup>

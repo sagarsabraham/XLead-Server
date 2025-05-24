@@ -8,12 +8,11 @@ namespace XLead_Server.Models
         public string StageName { get; set; }
         public string DisplayName { get; set; }
         public long CreatedBy { get; set; }
-        public DateTime CreatedAt { get; set; } = DateTime.Now;
+        public DateTime CreatedAt { get; set; }
         public long UpdatedBy { get; set; }
         public DateTime UpdatedAt { get; set; }
-        //public User CreatedByUser { get; set; }
-        //public User UpdatedByUser { get; set; }
-        public ICollection<StageHistory> DealStageHistory { get; set; }
-
+        public long DealId { get; set; }
+        public Deal Deal { get; set; }
     }
+
 }

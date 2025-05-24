@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using XLead_Server.Data;
 
@@ -11,9 +12,11 @@ using XLead_Server.Data;
 namespace XLeadServer.Migrations
 {
     [DbContext(typeof(ApiDbContext))]
-    partial class ApiDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250524063615_InitialMigration")]
+    partial class InitialMigration
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -73,7 +76,7 @@ namespace XLeadServer.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Accounts");
+                    b.ToTable("Account");
                 });
 
             modelBuilder.Entity("XLead_Server.Models.Company", b =>
@@ -190,7 +193,7 @@ namespace XLeadServer.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Countries");
+                    b.ToTable("Country");
                 });
 
             modelBuilder.Entity("XLead_Server.Models.DU", b =>
@@ -207,7 +210,7 @@ namespace XLeadServer.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("DUs");
+                    b.ToTable("DU");
                 });
 
             modelBuilder.Entity("XLead_Server.Models.Deal", b =>
@@ -243,6 +246,9 @@ namespace XLeadServer.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<long>("DealStageId")
+                        .HasColumnType("bigint");
+
                     b.Property<string>("Description")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -262,6 +268,9 @@ namespace XLeadServer.Migrations
                     b.Property<int>("RevenueTypeId")
                         .HasColumnType("int");
 
+                    b.Property<int>("StageId")
+                        .HasColumnType("int");
+
                     b.Property<DateTime>("StartingDate")
                         .HasColumnType("datetime2");
 
@@ -278,6 +287,8 @@ namespace XLeadServer.Migrations
                     b.HasIndex("ContactId");
 
                     b.HasIndex("CountryId");
+
+                    b.HasIndex("DealStageId");
 
                     b.HasIndex("DomainId");
 
@@ -306,9 +317,6 @@ namespace XLeadServer.Migrations
                     b.Property<long>("CreatedBy")
                         .HasColumnType("bigint");
 
-                    b.Property<long>("DealId")
-                        .HasColumnType("bigint");
-
                     b.Property<string>("DisplayName")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -327,8 +335,6 @@ namespace XLeadServer.Migrations
                         .HasColumnType("bigint");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("DealId");
 
                     b.HasIndex("UserId");
 
@@ -349,7 +355,7 @@ namespace XLeadServer.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Domains");
+                    b.ToTable("Domain");
                 });
 
             modelBuilder.Entity("XLead_Server.Models.Privilege", b =>
@@ -394,7 +400,7 @@ namespace XLeadServer.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Regions");
+                    b.ToTable("Region");
                 });
 
             modelBuilder.Entity("XLead_Server.Models.RevenueType", b =>
@@ -411,7 +417,7 @@ namespace XLeadServer.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("RevenueTypes");
+                    b.ToTable("RevenueType");
                 });
 
             modelBuilder.Entity("XLead_Server.Models.StageHistory", b =>
@@ -572,6 +578,12 @@ namespace XLeadServer.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("XLead_Server.Models.DealStage", "DealStage")
+                        .WithMany()
+                        .HasForeignKey("DealStageId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.HasOne("XLead_Server.Models.Domain", "Domain")
                         .WithMany("Deals")
                         .HasForeignKey("DomainId")
@@ -608,6 +620,8 @@ namespace XLeadServer.Migrations
 
                     b.Navigation("DU");
 
+                    b.Navigation("DealStage");
+
                     b.Navigation("Domain");
 
                     b.Navigation("Region");
@@ -617,17 +631,9 @@ namespace XLeadServer.Migrations
 
             modelBuilder.Entity("XLead_Server.Models.DealStage", b =>
                 {
-                    b.HasOne("XLead_Server.Models.Deal", "Deal")
-                        .WithMany("DealStages")
-                        .HasForeignKey("DealId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.HasOne("XLead_Server.Models.User", null)
                         .WithMany("DealStages")
                         .HasForeignKey("UserId");
-
-                    b.Navigation("Deal");
                 });
 
             modelBuilder.Entity("XLead_Server.Models.Privilege", b =>
@@ -639,7 +645,7 @@ namespace XLeadServer.Migrations
 
             modelBuilder.Entity("XLead_Server.Models.StageHistory", b =>
                 {
-                    b.HasOne("XLead_Server.Models.Deal", "Deal")
+                    b.HasOne("XLead_Server.Models.Deal", null)
                         .WithMany("DealStageHistory")
                         .HasForeignKey("DealId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -648,8 +654,6 @@ namespace XLeadServer.Migrations
                     b.HasOne("XLead_Server.Models.User", null)
                         .WithMany("DealStageHistory")
                         .HasForeignKey("UserId");
-
-                    b.Navigation("Deal");
                 });
 
             modelBuilder.Entity("XLead_Server.Models.User", b =>
@@ -710,8 +714,6 @@ namespace XLeadServer.Migrations
                     b.Navigation("Attachments");
 
                     b.Navigation("DealStageHistory");
-
-                    b.Navigation("DealStages");
                 });
 
             modelBuilder.Entity("XLead_Server.Models.Domain", b =>

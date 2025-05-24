@@ -7,15 +7,27 @@
     <RootNamespace>XLead_Server</RootNamespace>
   </PropertyGroup>
 
-  <ItemGroup>
-    <Compile Remove="NewFolder\**" />
-    <Content Remove="NewFolder\**" />
-    <EmbeddedResource Remove="NewFolder\**" />
-    <None Remove="NewFolder\**" />
-  </ItemGroup>
 
-  <ItemGroup>
+	<ItemGroup>
     <Compile Remove="Controllers\WeatherForecastController.cs" />
+    <Compile Remove="Migrations\20250524063615_InitialMigration.cs" />
+    <Compile Remove="Migrations\20250524063615_InitialMigration.Designer.cs" />
+    <Compile Remove="Migrations\20250524064132_FirstMigration.cs" />
+    <Compile Remove="Migrations\20250524064132_FirstMigration.Designer.cs" />
+    <Compile Remove="Migrations\20250524064627_updationmigration.cs" />
+    <Compile Remove="Migrations\20250524064627_updationmigration.Designer.cs" />
+    <Compile Remove="Migrations\20250524065051_MigrationDone.cs" />
+    <Compile Remove="Migrations\20250524065051_MigrationDone.Designer.cs" />
+    <Compile Remove="Migrations\20250524065754_InitialMigration.cs" />
+    <Compile Remove="Migrations\20250524070541_SecondaryMigration.cs" />
+    <Compile Remove="Migrations\20250524070541_SecondaryMigration.Designer.cs" />
+    <Compile Remove="Migrations\20250524080920_update.cs" />
+    <Compile Remove="Migrations\20250524080920_update.Designer.cs" />
+    <Compile Remove="Migrations\20250524103845_secondmigration.cs" />
+    <Compile Remove="Migrations\20250524103845_secondmigration.Designer.cs" />
+    <Compile Remove="Migrations\20250524104056_secondmigration.cs" />
+    <Compile Remove="Migrations\20250524104056_secondmigration.Designer.cs" />
+    <Compile Remove="Migrations\ApiDbContextModelSnapshot.cs" />
     <Compile Remove="WeatherForecast.cs" />
   </ItemGroup>
 
@@ -30,9 +42,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Controllers\" />
-    <Folder Include="Interfaces\" />
-    <Folder Include="Repositories\" />
+    <Folder Include="Migrations\" />
   </ItemGroup>
 
 </Project>

@@ -12,8 +12,8 @@ using XLead_Server.Data;
 namespace XLeadServer.Migrations
 {
     [DbContext(typeof(ApiDbContext))]
-    [Migration("20250523081332_InitialMigration")]
-    partial class InitialMigration
+    [Migration("20250524064132_FirstMigration")]
+    partial class FirstMigration
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -55,9 +55,28 @@ namespace XLeadServer.Migrations
 
                     b.HasKey("AttachmentId");
 
+                    b.HasIndex("DealId");
+
                     b.HasIndex("UserId");
 
                     b.ToTable("Attachments");
+                });
+
+            modelBuilder.Entity("XLead_Server.Models.Account", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("AccountName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Accounts");
                 });
 
             modelBuilder.Entity("XLead_Server.Models.Company", b =>
@@ -160,6 +179,40 @@ namespace XLeadServer.Migrations
                     b.ToTable("Contacts");
                 });
 
+            modelBuilder.Entity("XLead_Server.Models.Country", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("CountryName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Countries");
+                });
+
+            modelBuilder.Entity("XLead_Server.Models.DU", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("DUName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("DUs");
+                });
+
             modelBuilder.Entity("XLead_Server.Models.Deal", b =>
                 {
                     b.Property<long>("Id")
@@ -170,9 +223,6 @@ namespace XLeadServer.Migrations
 
                     b.Property<int>("AccountId")
                         .HasColumnType("int");
-
-                    b.Property<long>("AttachmentId")
-                        .HasColumnType("bigint");
 
                     b.Property<DateTime>("ClosingDate")
                         .HasColumnType("datetime2");
@@ -195,6 +245,9 @@ namespace XLeadServer.Migrations
                     b.Property<string>("DealName")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<long>("DealStageId")
+                        .HasColumnType("bigint");
 
                     b.Property<string>("Description")
                         .IsRequired()
@@ -229,9 +282,21 @@ namespace XLeadServer.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("AttachmentId");
+                    b.HasIndex("AccountId");
 
                     b.HasIndex("ContactId");
+
+                    b.HasIndex("CountryId");
+
+                    b.HasIndex("DealStageId");
+
+                    b.HasIndex("DomainId");
+
+                    b.HasIndex("DuId");
+
+                    b.HasIndex("RegionId");
+
+                    b.HasIndex("RevenueTypeId");
 
                     b.HasIndex("UserId");
 
@@ -276,6 +341,23 @@ namespace XLeadServer.Migrations
                     b.ToTable("DealStages");
                 });
 
+            modelBuilder.Entity("XLead_Server.Models.Domain", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("DomainName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Domains");
+                });
+
             modelBuilder.Entity("XLead_Server.Models.Privilege", b =>
                 {
                     b.Property<long>("Id")
@@ -304,6 +386,40 @@ namespace XLeadServer.Migrations
                     b.ToTable("Privileges");
                 });
 
+            modelBuilder.Entity("XLead_Server.Models.Region", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("RegionName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Regions");
+                });
+
+            modelBuilder.Entity("XLead_Server.Models.RevenueType", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("RevenueTypeName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("RevenueTypes");
+                });
+
             modelBuilder.Entity("XLead_Server.Models.StageHistory", b =>
                 {
                     b.Property<long>("Id")
@@ -321,9 +437,6 @@ namespace XLeadServer.Migrations
                     b.Property<long>("DealId")
                         .HasColumnType("bigint");
 
-                    b.Property<long?>("DealStageId")
-                        .HasColumnType("bigint");
-
                     b.Property<long>("StageId")
                         .HasColumnType("bigint");
 
@@ -339,8 +452,6 @@ namespace XLeadServer.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("DealId");
-
-                    b.HasIndex("DealStageId");
 
                     b.HasIndex("UserId");
 
@@ -412,9 +523,17 @@ namespace XLeadServer.Migrations
 
             modelBuilder.Entity("Attachment", b =>
                 {
+                    b.HasOne("XLead_Server.Models.Deal", "Deal")
+                        .WithMany("Attachments")
+                        .HasForeignKey("DealId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.HasOne("XLead_Server.Models.User", null)
                         .WithMany("Attachments")
                         .HasForeignKey("UserId");
+
+                    b.Navigation("Deal");
                 });
 
             modelBuilder.Entity("XLead_Server.Models.Company", b =>
@@ -441,9 +560,9 @@ namespace XLeadServer.Migrations
 
             modelBuilder.Entity("XLead_Server.Models.Deal", b =>
                 {
-                    b.HasOne("Attachment", null)
+                    b.HasOne("XLead_Server.Models.Account", "Account")
                         .WithMany("Deals")
-                        .HasForeignKey("AttachmentId")
+                        .HasForeignKey("AccountId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -453,11 +572,61 @@ namespace XLeadServer.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("XLead_Server.Models.Country", "Country")
+                        .WithMany("Deals")
+                        .HasForeignKey("CountryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("XLead_Server.Models.DealStage", "DealStage")
+                        .WithMany()
+                        .HasForeignKey("DealStageId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("XLead_Server.Models.Domain", "Domain")
+                        .WithMany("Deals")
+                        .HasForeignKey("DomainId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("XLead_Server.Models.DU", "DU")
+                        .WithMany("Deals")
+                        .HasForeignKey("DuId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("XLead_Server.Models.Region", "Region")
+                        .WithMany("Deals")
+                        .HasForeignKey("RegionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("XLead_Server.Models.RevenueType", "RevenueType")
+                        .WithMany("Deals")
+                        .HasForeignKey("RevenueTypeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.HasOne("XLead_Server.Models.User", null)
                         .WithMany("Deals")
                         .HasForeignKey("UserId");
 
+                    b.Navigation("Account");
+
                     b.Navigation("Contact");
+
+                    b.Navigation("Country");
+
+                    b.Navigation("DU");
+
+                    b.Navigation("DealStage");
+
+                    b.Navigation("Domain");
+
+                    b.Navigation("Region");
+
+                    b.Navigation("RevenueType");
                 });
 
             modelBuilder.Entity("XLead_Server.Models.DealStage", b =>
@@ -481,10 +650,6 @@ namespace XLeadServer.Migrations
                         .HasForeignKey("DealId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.HasOne("XLead_Server.Models.DealStage", null)
-                        .WithMany("DealStageHistory")
-                        .HasForeignKey("DealStageId");
 
                     b.HasOne("XLead_Server.Models.User", null)
                         .WithMany("DealStageHistory")
@@ -519,7 +684,7 @@ namespace XLeadServer.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("Attachment", b =>
+            modelBuilder.Entity("XLead_Server.Models.Account", b =>
                 {
                     b.Navigation("Deals");
                 });
@@ -534,19 +699,41 @@ namespace XLeadServer.Migrations
                     b.Navigation("Deals");
                 });
 
+            modelBuilder.Entity("XLead_Server.Models.Country", b =>
+                {
+                    b.Navigation("Deals");
+                });
+
+            modelBuilder.Entity("XLead_Server.Models.DU", b =>
+                {
+                    b.Navigation("Deals");
+                });
+
             modelBuilder.Entity("XLead_Server.Models.Deal", b =>
                 {
+                    b.Navigation("Attachments");
+
                     b.Navigation("DealStageHistory");
                 });
 
-            modelBuilder.Entity("XLead_Server.Models.DealStage", b =>
+            modelBuilder.Entity("XLead_Server.Models.Domain", b =>
                 {
-                    b.Navigation("DealStageHistory");
+                    b.Navigation("Deals");
                 });
 
             modelBuilder.Entity("XLead_Server.Models.Privilege", b =>
                 {
                     b.Navigation("UserPrivileges");
+                });
+
+            modelBuilder.Entity("XLead_Server.Models.Region", b =>
+                {
+                    b.Navigation("Deals");
+                });
+
+            modelBuilder.Entity("XLead_Server.Models.RevenueType", b =>
+                {
+                    b.Navigation("Deals");
                 });
 
             modelBuilder.Entity("XLead_Server.Models.User", b =>

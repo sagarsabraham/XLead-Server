@@ -12,6 +12,84 @@ namespace XLeadServer.Migrations
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateTable(
+                name: "Accounts",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    AccountName = table.Column<string>(type: "nvarchar(max)", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Accounts", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Countries",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    CountryName = table.Column<string>(type: "nvarchar(max)", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Countries", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Domains",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    DomainName = table.Column<string>(type: "nvarchar(max)", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Domains", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "DUs",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    DUName = table.Column<string>(type: "nvarchar(max)", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_DUs", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Regions",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    RegionName = table.Column<string>(type: "nvarchar(max)", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Regions", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "RevenueTypes",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    RevenueTypeName = table.Column<string>(type: "nvarchar(max)", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_RevenueTypes", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Users",
                 columns: table => new
                 {
@@ -28,29 +106,6 @@ namespace XLeadServer.Migrations
                     table.ForeignKey(
                         name: "FK_Users_Users_CreatedBy",
                         column: x => x.CreatedBy,
-                        principalTable: "Users",
-                        principalColumn: "Id");
-                });
-
-            migrationBuilder.CreateTable(
-                name: "Attachments",
-                columns: table => new
-                {
-                    AttachmentId = table.Column<long>(type: "bigint", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    FileName = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    S3UploadName = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    DealId = table.Column<long>(type: "bigint", nullable: false),
-                    CreatedBy = table.Column<long>(type: "bigint", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    UserId = table.Column<long>(type: "bigint", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Attachments", x => x.AttachmentId);
-                    table.ForeignKey(
-                        name: "FK_Attachments_Users_UserId",
-                        column: x => x.UserId,
                         principalTable: "Users",
                         principalColumn: "Id");
                 });
@@ -207,8 +262,8 @@ namespace XLeadServer.Migrations
                     Description = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     Probability = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
                     StageId = table.Column<int>(type: "int", nullable: false),
+                    DealStageId = table.Column<long>(type: "bigint", nullable: false),
                     ContactId = table.Column<long>(type: "bigint", nullable: false),
-                    AttachmentId = table.Column<long>(type: "bigint", nullable: false),
                     StartingDate = table.Column<DateTime>(type: "datetime2", nullable: false),
                     ClosingDate = table.Column<DateTime>(type: "datetime2", nullable: false),
                     CreatedBy = table.Column<long>(type: "bigint", nullable: false),
@@ -220,10 +275,10 @@ namespace XLeadServer.Migrations
                 {
                     table.PrimaryKey("PK_Deals", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_Deals_Attachments_AttachmentId",
-                        column: x => x.AttachmentId,
-                        principalTable: "Attachments",
-                        principalColumn: "AttachmentId",
+                        name: "FK_Deals_Accounts_AccountId",
+                        column: x => x.AccountId,
+                        principalTable: "Accounts",
+                        principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
                         name: "FK_Deals_Contacts_ContactId",
@@ -232,7 +287,72 @@ namespace XLeadServer.Migrations
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
+                        name: "FK_Deals_Countries_CountryId",
+                        column: x => x.CountryId,
+                        principalTable: "Countries",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_Deals_DUs_DuId",
+                        column: x => x.DuId,
+                        principalTable: "DUs",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_Deals_DealStages_DealStageId",
+                        column: x => x.DealStageId,
+                        principalTable: "DealStages",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_Deals_Domains_DomainId",
+                        column: x => x.DomainId,
+                        principalTable: "Domains",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_Deals_Regions_RegionId",
+                        column: x => x.RegionId,
+                        principalTable: "Regions",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_Deals_RevenueTypes_RevenueTypeId",
+                        column: x => x.RevenueTypeId,
+                        principalTable: "RevenueTypes",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
                         name: "FK_Deals_Users_UserId",
+                        column: x => x.UserId,
+                        principalTable: "Users",
+                        principalColumn: "Id");
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Attachments",
+                columns: table => new
+                {
+                    AttachmentId = table.Column<long>(type: "bigint", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    FileName = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    S3UploadName = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    DealId = table.Column<long>(type: "bigint", nullable: false),
+                    CreatedBy = table.Column<long>(type: "bigint", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    UserId = table.Column<long>(type: "bigint", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Attachments", x => x.AttachmentId);
+                    table.ForeignKey(
+                        name: "FK_Attachments_Deals_DealId",
+                        column: x => x.DealId,
+                        principalTable: "Deals",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_Attachments_Users_UserId",
                         column: x => x.UserId,
                         principalTable: "Users",
                         principalColumn: "Id");
@@ -250,17 +370,11 @@ namespace XLeadServer.Migrations
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
                     UpdatedBy = table.Column<long>(type: "bigint", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    DealStageId = table.Column<long>(type: "bigint", nullable: true),
                     UserId = table.Column<long>(type: "bigint", nullable: true)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_DealStageHistory", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_DealStageHistory_DealStages_DealStageId",
-                        column: x => x.DealStageId,
-                        principalTable: "DealStages",
-                        principalColumn: "Id");
                     table.ForeignKey(
                         name: "FK_DealStageHistory_Deals_DealId",
                         column: x => x.DealId,
@@ -273,6 +387,11 @@ namespace XLeadServer.Migrations
                         principalTable: "Users",
                         principalColumn: "Id");
                 });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Attachments_DealId",
+                table: "Attachments",
+                column: "DealId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Attachments_UserId",
@@ -295,14 +414,44 @@ namespace XLeadServer.Migrations
                 column: "UserId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Deals_AttachmentId",
+                name: "IX_Deals_AccountId",
                 table: "Deals",
-                column: "AttachmentId");
+                column: "AccountId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Deals_ContactId",
                 table: "Deals",
                 column: "ContactId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Deals_CountryId",
+                table: "Deals",
+                column: "CountryId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Deals_DealStageId",
+                table: "Deals",
+                column: "DealStageId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Deals_DomainId",
+                table: "Deals",
+                column: "DomainId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Deals_DuId",
+                table: "Deals",
+                column: "DuId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Deals_RegionId",
+                table: "Deals",
+                column: "RegionId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Deals_RevenueTypeId",
+                table: "Deals",
+                column: "RevenueTypeId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Deals_UserId",
@@ -313,11 +462,6 @@ namespace XLeadServer.Migrations
                 name: "IX_DealStageHistory_DealId",
                 table: "DealStageHistory",
                 column: "DealId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_DealStageHistory_DealStageId",
-                table: "DealStageHistory",
-                column: "DealStageId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_DealStageHistory_UserId",
@@ -354,13 +498,13 @@ namespace XLeadServer.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
+                name: "Attachments");
+
+            migrationBuilder.DropTable(
                 name: "DealStageHistory");
 
             migrationBuilder.DropTable(
                 name: "UserPrivileges");
-
-            migrationBuilder.DropTable(
-                name: "DealStages");
 
             migrationBuilder.DropTable(
                 name: "Deals");
@@ -369,10 +513,28 @@ namespace XLeadServer.Migrations
                 name: "Privileges");
 
             migrationBuilder.DropTable(
-                name: "Attachments");
+                name: "Accounts");
 
             migrationBuilder.DropTable(
                 name: "Contacts");
+
+            migrationBuilder.DropTable(
+                name: "Countries");
+
+            migrationBuilder.DropTable(
+                name: "DUs");
+
+            migrationBuilder.DropTable(
+                name: "DealStages");
+
+            migrationBuilder.DropTable(
+                name: "Domains");
+
+            migrationBuilder.DropTable(
+                name: "Regions");
+
+            migrationBuilder.DropTable(
+                name: "RevenueTypes");
 
             migrationBuilder.DropTable(
                 name: "Companies");

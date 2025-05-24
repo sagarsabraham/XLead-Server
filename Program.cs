@@ -1,5 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using XLead_Server.Data;
+using XLead_Server.Interfaces;
+using XLead_Server.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,6 +13,8 @@ builder.Services.AddDbContext<ApiDbContext>(option =>
     option.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddScoped<IContactRepository, ContactRepository>();
+builder.Services.AddScoped<IDealRepository, DealRepository>();
 
 var app = builder.Build();
 

@@ -1,0 +1,23 @@
+//Initial addition to the Users Table (23/05/2025)
+INSERT INTO Users (Name, CreatedBy, AssignedTo, CreatedAt)
+ 
+VALUES
+ 
+    ('SuperAdmin', 1, 1, '2025-05-23 00:00:00.0000000'),
+ 
+    ('Admin1', 1, 1, '2025-05-23 00:00:00.0000000'),
+ 
+    ('User1', 2, 2, '2025-05-23 00:00:00.0000000');
+
+//Initial addition to the Attachments Table (23/05/2025)
+INSERT INTO Attachments (
+    FileName, 
+    S3UploadName, 
+    CreatedBy, 
+    CreatedAt
+)
+VALUES 
+    ('document.pdf', 's3://bucket/doc001.pdf', 1, '2025-05-23 00:00:00.0000000'),
+    ('image.jpg', 's3://bucket/img002.jpg', 2, '2025-05-23 00:00:00.0000000'),
+    ('report.xlsx', 's3://bucket/rpt003.xlsx', 3, '2025-05-23 00:00:00.0000000');
+

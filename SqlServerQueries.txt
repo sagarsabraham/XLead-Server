@@ -1,23 +1,27 @@
-//Initial addition to the Users Table (23/05/2025)
-INSERT INTO Users (Name, CreatedBy, AssignedTo, CreatedAt)
- 
-VALUES
- 
-    ('SuperAdmin', 1, 1, '2025-05-23 00:00:00.0000000'),
- 
-    ('Admin1', 1, 1, '2025-05-23 00:00:00.0000000'),
- 
-    ('User1', 2, 2, '2025-05-23 00:00:00.0000000');
 
-//Initial addition to the Attachments Table (23/05/2025)
-INSERT INTO Attachments (
-    FileName, 
-    S3UploadName, 
-    CreatedBy, 
-    CreatedAt
+
+    INSERT INTO Accounts (Id, AccountName) VALUES (1, 'Acme Corporation');
+    INSERT INTO Regions (Id, RegionName) VALUES (1, 'North America');
+    INSERT INTO Domains (Id, DomainName) VALUES (1, 'Technology');
+    INSERT INTO RevenueTypes (Id, RevenueTypeName) VALUES (1, 'Recurring');
+    INSERT INTO DUs (Id, DUName) VALUES (1, 'Business Unit 1');
+    INSERT INTO Countries (Id, CountryName) VALUES (1, 'United States');
+    INSERT INTO Users (Id, Name, CreatedBy, AssignedTo, CreatedAt) VALUES (1, 'Admin User', NULL, NULL, GETDATE());
+    INSERT INTO Companies (Id, CompanyName, IndustryVerticalId, Website, CompanyPhoneNumber, IsActive, CreatedBy, CreatedAt, UpdatedBy, UpdatedAt, UserId)
+VALUES (1, 'Acme Corp', '1', 'https://acme.com', '123-456-7890', 1, 1, GETDATE(), 1, GETDATE(), 1);
+INSERT INTO Contacts (Id, FirstName, LastName, Email, PhoneNumber, CompanyId, IsActive, CreatedBy, CreatedAt, UpdatedAt, UserId)
+VALUES (1, 'John', 'Doe', 'john.doe@acme.com', '555-1234', 1, 1, 1, GETDATE(), GETDATE(), 1);
+INSERT INTO Deals (
+    Id, DealName, DealAmount, AccountId, RegionId, DomainId, RevenueTypeId, DuId, CountryId,
+    Description, Probability, ContactId, StartingDate, ClosingDate, CreatedBy, CreatedAt, UpdatedAt, UserId
 )
-VALUES 
-    ('document.pdf', 's3://bucket/doc001.pdf', 1, '2025-05-23 00:00:00.0000000'),
-    ('image.jpg', 's3://bucket/img002.jpg', 2, '2025-05-23 00:00:00.0000000'),
-    ('report.xlsx', 's3://bucket/rpt003.xlsx', 3, '2025-05-23 00:00:00.0000000');
-
+VALUES (
+    1, 'Big Software Sale', 100000.00, 1, 1, 1, 1, 1, 1,
+    'Enterprise software deal', 0.8, 1, '2024-05-01', '2024-06-01', 1, GETDATE(), GETDATE(), 1
+);
+INSERT INTO DealStages (
+    StageName, DisplayName, CreatedBy, CreatedAt, UpdatedBy, UpdatedAt, DealId, UserId
+)
+VALUES (
+    'Negotiation', 'Negotiation', 1, GETDATE(), 1, GETDATE(), 1, 1
+);

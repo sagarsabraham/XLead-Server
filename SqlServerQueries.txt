@@ -25,3 +25,55 @@ INSERT INTO DealStages (
 VALUES (
     'Negotiation', 'Negotiation', 1, GETDATE(), 1, GETDATE(), 1, 1
 );
+
+INSERT INTO Companies (CompanyName, IndustryVerticalId, Website, CompanyPhoneNumber, IsActive, CreatedBy, CreatedAt, UpdatedBy, UpdatedAt, UserId)
+VALUES 
+('Harley Davidson', '1', 'https://www.harley-davidson.com', '111-222-3333', 1, 1, GETDATE(), 1, GETDATE(), 1),
+('Bayada Home Health Care', '1', 'https://www.bayada.com', '222-333-4444', 1, 1, GETDATE(), 1, GETDATE(), 1),
+('Aditya Birla Group', '1', 'https://www.adityabirla.com', '333-444-5555', 0, 1, GETDATE(), 1, GETDATE(), 1),
+('ADVA Health Solutions', '1', 'https://www.adva.com', '444-555-6666', 0, 1, GETDATE(), 1, GETDATE(), 1),
+('AstraZeneca', '1', 'https://www.astrazeneca.com', '555-666-7777', 1, 1, GETDATE(), 1, GETDATE(), 1),
+('BookAnyone', '1', 'https://www.bookanyone.com', '666-777-8888', 1, 1, GETDATE(), 1, GETDATE(), 1),
+('Duracell', '1', 'https://www.duracell.com', '777-888-9999', 0, 1, GETDATE(), 1, GETDATE(), 1),
+('ESC - European Society of Cardiology', '1', 'https://www.escardio.org', '888-999-0000', 1, 1, GETDATE(), 1, GETDATE(), 1),
+('FormAssembly', '1', 'https://www.formassembly.com', '999-000-1111', 1, 1, GETDATE(), 1, GETDATE(), 1),
+('Glenmark', '1', 'https://www.glenmarkpharma.com', '000-111-2222', 0, 1, GETDATE(), 1, GETDATE(), 1),
+('Global Health', '1', 'https://www.globalhealth.com', '111-222-3334', 1, 1, GETDATE(), 1, GETDATE(), 1),
+('Helios Quantitative', '1', 'https://www.heliosdriven.com', '222-333-4445', 1, 1, GETDATE(), 1, GETDATE(), 1),
+('Johnson & Johnson', '1', 'https://www.jnj.com', '333-444-5556', 1, 1, GETDATE(), 1, GETDATE(), 1),
+('Merck', '1', 'https://www.merck.com', '444-555-6667', 0, 1, GETDATE(), 1, GETDATE(), 1),
+('Singer', '1', 'https://www.singer.com', '555-666-7778', 0, 1, GETDATE(), 1, GETDATE(), 1),
+('Speedo', '1', 'https://www.speedo.com', '666-777-8889', 1, 1, GETDATE(), 1, GETDATE(), 1),
+('Supreme', '1', 'https://www.supremenewyork.com', '777-888-9990', 1, 1, GETDATE(), 1, GETDATE(), 1),
+('Terumo', '1', 'https://www.terumo.com', '888-999-0001', 0, 1, GETDATE(), 1, GETDATE(), 1),
+('Topgolf', '1', 'https://www.topgolf.com', '999-000-1112', 1, 1, GETDATE(), 1, GETDATE(), 1),
+('Tyson', '1', 'https://www.tysonfoods.com', '000-111-2223', 0, 1, GETDATE(), 1, GETDATE(), 1),
+('Veriday', '1', 'https://www.veriday.com', '111-222-3335', 1, 1, GETDATE(), 1, GETDATE(), 1);
+
+
+
+
+INSERT INTO Contacts (FirstName, LastName, Email, PhoneNumber, CompanyId, IsActive, CreatedBy, CreatedAt, UpdatedAt, UserId)
+VALUES 
+('Mark', 'Rider', 'mark.rider@harleydavidson.com', '800-111-1000', 2, 1, 1, GETDATE(), GETDATE(), 1),        -- Harley Davidson = 2
+('Linda', 'Care', 'linda.care@bayada.com', '800-222-1001', 3, 1, 1, GETDATE(), GETDATE(), 1),                 -- Bayada Home Health Care = 3
+('Ramesh', 'Kumar', 'ramesh.kumar@adityabirla.com', '800-333-1002', 4, 1, 1, GETDATE(), GETDATE(), 1),         -- Aditya Birla Group = 4
+('Sarah', 'Adva', 'sarah.adva@adva.com', '800-444-1003', 5, 1, 1, GETDATE(), GETDATE(), 1),                    -- ADVA Health Solutions = 5
+('John', 'Astra', 'john.astra@astrazeneca.com', '800-555-1004', 6, 1, 1, GETDATE(), GETDATE(), 1),             -- AstraZeneca = 6
+('Priya', 'Sharma', 'priya.sharma@bookanyone.com', '800-666-1005', 7, 1, 1, GETDATE(), GETDATE(), 1),          -- BookAnyone = 7
+('David', 'Cell', 'david.cell@duracell.com', '800-777-1006', 8, 1, 1, GETDATE(), GETDATE(), 1),                -- Duracell = 8
+('Anne', 'Cardio', 'anne.cardio@escardio.org', '800-888-1007', 9, 1, 1, GETDATE(), GETDATE(), 1),              -- ESC - European Society of Cardiology = 9
+('Karen', 'Form', 'karen.form@formassembly.com', '800-999-1008', 10, 1, 1, GETDATE(), GETDATE(), 1),           -- FormAssembly = 10
+('Rohit', 'Gupta', 'rohit.gupta@glenmarkpharma.com', '800-000-1009', 11, 1, 1, GETDATE(), GETDATE(), 1),       -- Glenmark = 11
+('Nina', 'Health', 'nina.health@globalhealth.com', '800-111-1010', 12, 1, 1, GETDATE(), GETDATE(), 1),          -- Global Health = 12
+('Alex', 'Helios', 'alex.helios@heliosdriven.com', '800-222-1011', 13, 1, 1, GETDATE(), GETDATE(), 1),          -- Helios Quantitative = 13
+('Michael', 'Johnson', 'michael.johnson@jnj.com', '800-333-1012', 14, 1, 1, GETDATE(), GETDATE(), 1),           -- Johnson & Johnson = 14
+('Emma', 'Merck', 'emma.merck@merck.com', '800-444-1013', 15, 1, 1, GETDATE(), GETDATE(), 1),                   -- Merck = 15
+('Raj', 'Singer', 'raj.singer@singer.com', '800-555-1014', 16, 1, 1, GETDATE(), GETDATE(), 1),                  -- Singer = 16
+('Sam', 'Speed', 'sam.speed@speedo.com', '800-666-1015', 17, 1, 1, GETDATE(), GETDATE(), 1),                    -- Speedo = 17
+('Tina', 'Supr', 'tina.supr@supremenewyork.com', '800-777-1016', 18, 1, 1, GETDATE(), GETDATE(), 1),             -- Supreme = 18
+('Leo', 'Teru', 'leo.teru@terumo.com', '800-888-1017', 19, 1, 1, GETDATE(), GETDATE(), 1),                      -- Terumo = 19
+('Nathan', 'Golf', 'nathan.golf@topgolf.com', '800-999-1018', 20, 1, 1, GETDATE(), GETDATE(), 1),               -- Topgolf = 20
+('Kiran', 'Tyson', 'kiran.tyson@tysonfoods.com', '800-000-1019', 21, 1, 1, GETDATE(), GETDATE(), 1),            -- Tyson = 21
+('Anjali', 'Veri', 'anjali.veri@veriday.com', '800-111-1020', 22, 1, 1, GETDATE(), GETDATE(), 1);               -- Veriday = 22
+

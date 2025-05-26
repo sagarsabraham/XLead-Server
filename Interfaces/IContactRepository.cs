@@ -7,6 +7,7 @@ namespace XLead_Server.Interfaces
     {
         Task<IEnumerable<Contact>> GetAllContacts();
         Task<Contact> AddContactAsync(ContactCreateDto dto);
+        
         Task<IEnumerable<ContactReadDto>> GetAllContactsAsync();
     }
 }

@@ -27,14 +27,24 @@ namespace XLead_Server.Repositories
         {
             var company = _mapper.Map<Company>(dto);
             company.IsActive = true;
-            company.CreatedBy = 1;
-            company.UpdatedBy = 1;
+            company.CreatedBy = dto.CreatedBy;
+            company.UpdatedBy = dto.CreatedBy;
             company.UpdatedAt = DateTime.UtcNow;
 
             _context.Companies.Add(company);
             await _context.SaveChangesAsync();
             return company;
         }
+     
+
+        public async Task<Company?> GetByNameAsync(string companyName)
+        {
+            return await _context.Companies
+                .FirstOrDefaultAsync(c => c.CompanyName == companyName);
+        }
+
+
+
 
         public async Task<Dictionary<string, List<string>>> GetCompanyContactMapAsync()
         {

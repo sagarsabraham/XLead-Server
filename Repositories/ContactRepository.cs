@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using XLead_Server.Data;
 using XLead_Server.DTOs;
@@ -11,6 +12,8 @@ namespace XLead_Server.Repositories
     {
         private readonly ApiDbContext _context;
         private readonly IMapper _mapper;
+        
+
         public ContactRepository(ApiDbContext context, IMapper mapper)
         {
             _context = context;
@@ -24,13 +27,17 @@ namespace XLead_Server.Repositories
         {
             var contact = _mapper.Map<Contact>(dto);
             contact.IsActive = true;
-            contact.CreatedBy = 1;
+            contact.CreatedBy = 1; // Replace with user ID from auth
             contact.UpdatedAt = DateTime.UtcNow;
 
             _context.Contacts.Add(contact);
             await _context.SaveChangesAsync();
             return contact;
         }
+       
+
+
+
         public async Task<IEnumerable<ContactReadDto>> GetAllContactsAsync()
         {
             var contacts = await _context.Contacts.Include(c => c.Company).ToListAsync();

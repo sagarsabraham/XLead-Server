@@ -14,6 +14,8 @@ namespace XLead_Server.Models
         public Region Region { get; set; }
         public int DomainId { get; set; }
         public Domain Domain { get; set; }
+        public long DealStageId { get; set; }
+        public DealStage DealStage { get; set; }
         public int RevenueTypeId { get; set; }
         public RevenueType RevenueType { get; set; }
         public int DuId { get; set; }
@@ -29,7 +31,7 @@ namespace XLead_Server.Models
         public long CreatedBy { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.Now;
         public DateTime UpdatedAt { get; set; }
-        public ICollection<DealStage> DealStages { get; set; } = new List<DealStage>();
+        
         public ICollection<StageHistory> DealStageHistory { get; set; } = new List<StageHistory>();
         public ICollection<Attachment> Attachments { get; set; } = new List<Attachment>();
     }

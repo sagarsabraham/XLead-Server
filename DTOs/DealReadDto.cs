@@ -20,7 +20,7 @@ namespace XLead_Server.DTOs
         public string Description { get; set; }
         public decimal Probability { get; set; }
       
-        public long? StageId { get; set; }
+        public long? DealStageId { get; set; }
         public string StageName { get; set; }
        
 

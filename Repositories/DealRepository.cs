@@ -36,16 +36,16 @@ namespace XLead_Server.Repositories
                 .Include(d => d.DU)
                 .Include(d => d.Country)
                 .Include(d => d.Contact)
-                .Include(d => d.DealStages)
+                .Include(d => d.DealStage)
                 .FirstOrDefaultAsync(d => d.Id == id);
 
             if (deal == null)
                 return null;
 
             // Get the current stage (latest by CreatedAt)
-            var currentStage = deal.DealStages
-                .OrderByDescending(s => s.CreatedAt)
-                .FirstOrDefault();
+            //var currentStage = deal.DealStage
+            //    .OrderByDescending(s => s.CreatedAt)
+            //    .FirstOrDefault();
 
             return new DealReadDto
             {
@@ -66,8 +66,8 @@ namespace XLead_Server.Repositories
                 CountryName = deal.Country?.CountryName,
                 Description = deal.Description,
                 Probability = deal.Probability,
-                StageId = currentStage?.Id,
-                StageName = currentStage?.StageName,
+                DealStageId = deal.DealStageId,
+                StageName = deal.DealStage?.StageName,
                 ContactId = deal.ContactId,
                 ContactName = deal.Contact != null ? $"{deal.Contact.FirstName} {deal.Contact.LastName}" : null,
                 StartingDate = deal.StartingDate,

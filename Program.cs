@@ -3,6 +3,7 @@ using XLead_Server.Data;
 using XLead_Server.Interfaces;
 using XLead_Server.Repositories;
 
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -34,6 +35,13 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddScoped<ICompanyRepository, CompanyRepository>();
 builder.Services.AddScoped<IContactRepository, ContactRepository>();
 builder.Services.AddScoped<IDealRepository, DealRepository>();
+builder.Services.AddScoped<ICountryRepository, CountryRepository>();
+builder.Services.AddScoped<IRevenueType, RevenueTypeRepository>();
+builder.Services.AddScoped<IDuRepository, DuRepository>();
+builder.Services.AddScoped<IAccountRepository, AccountRepository>();
+builder.Services.AddScoped<IDomainRepository, DomainRepository>();
+builder.Services.AddScoped<IDealStageRepository, DealStageRepository>();
+builder.Services.AddScoped<IRegionRepository, RegionRepository>();
 builder.Services.AddAutoMapper(typeof(Program)); // Scans current assembly for profiles
 
 var app = builder.Build();
@@ -54,3 +62,4 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
+

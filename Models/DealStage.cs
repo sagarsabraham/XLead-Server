@@ -11,8 +11,9 @@ namespace XLead_Server.Models
         public DateTime CreatedAt { get; set; }
         public long UpdatedBy { get; set; }
         public DateTime UpdatedAt { get; set; }
-        public long DealId { get; set; }
-        public Deal Deal { get; set; }
+
+        public ICollection<Deal> Deals { get; set; }
+
     }
 
 }

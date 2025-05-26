@@ -33,6 +33,7 @@ public class DealsController : ControllerBase
             AccountId = dto.AccountId,
             RegionId = dto.RegionId,
             DomainId = dto.DomainId,
+            DealStageId = dto.DealStageId,
             RevenueTypeId = dto.RevenueTypeId,
             DuId = dto.DuId,
             CountryId = dto.CountryId,

@@ -16,7 +16,7 @@ INSERT INTO Deals (
     Description, Probability, ContactId, StartingDate, ClosingDate, CreatedBy, CreatedAt, UpdatedAt, UserId
 )
 VALUES (
-    1, 'Big Software Sale', 100000.00, 1, 1, 1, 1, 1, 1,
+    1, 'Big Software Sale', 100000.00, 1, 1, 1, ``1, 1, 1,
     'Enterprise software deal', 0.8, 1, '2024-05-01', '2024-06-01', 1, GETDATE(), GETDATE(), 1
 );
 INSERT INTO DealStages (
@@ -25,3 +25,50 @@ INSERT INTO DealStages (
 VALUES (
     'Negotiation', 'Negotiation', 1, GETDATE(), 1, GETDATE(), 1, 1
 );
+
+/---------- 26/05/2025 --------------------/
+use XLead;
+
+INSERT INTO Accounts (AccountName) VALUES ('KniTT');
+
+INSERT INTO Regions (RegionName) VALUES ('India');
+INSERT INTO Domains (DomainName) VALUES ('Edtech');
+INSERT INTO RevenueTypes (RevenueTypeName) VALUES ('T and M');
+INSERT INTO DUs (DUName) VALUES ('DU-1');
+INSERT INTO Countries (CountryName) VALUES ('United States');
+
+
+INSERT INTO Users (Name, CreatedBy, AssignedTo, CreatedAt)
+VALUES ('Admin User', NULL, NULL, GETDATE());
+
+INSERT INTO Companies (
+    CompanyName, IndustryVerticalId, Website, CompanyPhoneNumber,
+    IsActive, CreatedBy, CreatedAt, UpdatedBy, UpdatedAt, UserId
+)
+VALUES (
+    'Acme Corp', '1', 'https://acme.com', '123-456-7890',
+    1, 1, GETDATE(), 1, GETDATE(), 1
+);
+
+INSERT INTO Contacts (
+    FirstName, LastName, Email, PhoneNumber,
+    CompanyId, IsActive, CreatedBy, CreatedAt, UpdatedAt, UserId
+)
+VALUES (
+    'John', 'Doe', 'john.doe@acme.com', '555-1234',
+    1, 1, 1, GETDATE(), GETDATE(), 1
+);
+
+INSERT INTO DealStages (
+    StageName, DisplayName, CreatedBy, CreatedAt, UpdatedBy, UpdatedAt, UserId
+)
+VALUES
+('Qualification', 'Qualification', 1, GETDATE(), 1, GETDATE(), 1),
+('Need Analysis', 'Need Analysis', 1, GETDATE(), 1, GETDATE(), 1),
+('Proposal/Price Quote', 'Proposal/Price Quote', 1, GETDATE(), 1, GETDATE(), 1),
+('Negotiation/Review', 'Negotiation/Review', 1, GETDATE(), 1, GETDATE(), 1),
+('Closed Won', 'Closed Won', 1, GETDATE(), 1, GETDATE(), 1),
+('Closed Lost', 'Closed Lost', 1, GETDATE(), 1, GETDATE(), 1);
+
+
+

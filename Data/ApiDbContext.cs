@@ -3,20 +3,21 @@ using XLead_Server.Models;
 
 namespace XLead_Server.Data
 {
-    public class ApiDbContext :DbContext
+    public class ApiDbContext : DbContext
     {
         public ApiDbContext(DbContextOptions<ApiDbContext> options) : base(options)
         {
 
 
         }
-        protected override void OnModelCreating(ModelBuilder modelBuilder)
-        {
-            modelBuilder.Entity<DealStage>()
-                .HasOne(ds => ds.Deal)
-                .WithMany(d => d.DealStages)
-                .HasForeignKey(ds => ds.DealId);
-        }
+
+      
+        //{
+        //    modelBuilder.Entity<DealStage>()
+        //        .HasOne(ds => ds.Deal)
+        //        .WithMany(d => d.DealStages)
+        //        .HasForeignKey(ds => ds.DealId);
+        //}
 
         public DbSet<Attachment> Attachments { get; set; }
         public DbSet<Company> Companies { get; set; }

@@ -7,7 +7,7 @@ using XLead_Server.Models;
 
 namespace XLead_Server.Repositories
 {
-    public class CompanyRepository : ICompanyRepository
+    public class CompanyRepository :ICompanyRepository
     {
         private readonly ApiDbContext _context;
         private readonly IMapper _mapper;
@@ -20,24 +20,31 @@ namespace XLead_Server.Repositories
         public async Task<IEnumerable<CompanyReadDto>> GetAllCompaniesAsync()
         {
             var companies = await _context.Companies.ToListAsync();
-            var dtos = _mapper.Map<IEnumerable<CompanyReadDto>>(companies);
-
-         
-            return dtos;
+            return _mapper.Map<IEnumerable<CompanyReadDto>>(companies);
         }
 
         public async Task<Company> AddCompanyAsync(CompanyCreateDto dto)
         {
             var company = _mapper.Map<Company>(dto);
             company.IsActive = true;
-            company.CreatedBy = 1;
-            company.UpdatedBy = 1;
+            company.CreatedBy = dto.CreatedBy;
+            company.UpdatedBy = dto.CreatedBy;
             company.UpdatedAt = DateTime.UtcNow;
 
             _context.Companies.Add(company);
             await _context.SaveChangesAsync();
             return company;
         }
+     
+
+        public async Task<Company?> GetByNameAsync(string companyName)
+        {
+            return await _context.Companies
+                .FirstOrDefaultAsync(c => c.CompanyName == companyName);
+        }
+
+
+
 
         public async Task<Dictionary<string, List<string>>> GetCompanyContactMapAsync()
         {
@@ -50,7 +57,7 @@ namespace XLead_Server.Repositories
                 c => c.Contacts.Select(ct => $"{ct.FirstName} {ct.LastName}".Trim()).ToList()
             );
         }
+    
 
-
-    }
+}
 }

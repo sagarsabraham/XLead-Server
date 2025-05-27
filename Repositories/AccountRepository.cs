@@ -8,14 +8,13 @@ namespace XLead_Server.Repositories
 {
     public class AccountRepository : IAccountRepository
     {
-        private readonly ApiDbContext _context;
-
+        private ApiDbContext _context;
         public AccountRepository(ApiDbContext context)
         {
             _context = context;
         }
 
-        public async Task<IEnumerable<Account>> GetAllAccountsAsync()
+        public async Task<IEnumerable<Account>> GetAllAccounts()
         {
             return await _context.Accounts.ToListAsync();
         }

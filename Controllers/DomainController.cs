@@ -1,8 +1,6 @@
-﻿// Controllers/DomainController.cs
+﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using XLead_Server.Data;
-using XLead_Server.Models;
+using XLead_Server.Interfaces;
 
 namespace XLead_Server.Controllers
 {
@@ -10,21 +8,21 @@ namespace XLead_Server.Controllers
     [ApiController]
     public class DomainController : ControllerBase
     {
-        private readonly ApiDbContext _context;
-
-        public DomainController(ApiDbContext context)
+        private IDomainRepository _domainRepository;
+        public DomainController(IDomainRepository domainRepository)
         {
-            _context = context;
+            _domainRepository = domainRepository;
         }
 
         // GET: api/Domain
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<object>>> GetDomains()
+        public async Task<IActionResult> Get()
         {
-            var domains = await _context.Domains
-                .Select(d => new { d.Id, d.DomainName })
-                .ToListAsync();
-
+            var domains = await _domainRepository.GetAllDomains();
+            if (domains == null)
+            {
+                return NotFound();
+            }
             return Ok(domains);
         }
     }

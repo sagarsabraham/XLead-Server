@@ -1,8 +1,8 @@
-﻿// Controllers/DealStageController.cs
+﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using XLead_Server.Data;
-using XLead_Server.Models;
+using XLead_Server.Controllers;
+using XLead_Server.Interfaces;
+using XLead_Server.Repositories;
 
 namespace XLead_Server.Controllers
 {
@@ -10,24 +10,23 @@ namespace XLead_Server.Controllers
     [ApiController]
     public class DealStageController : ControllerBase
     {
-        private readonly ApiDbContext _context;
-
-        public DealStageController(ApiDbContext context)
+        private IDealStageRepository _dealStageRepository;
+        public DealStageController(IDealStageRepository dealStageRepository)
         {
-            _context = context;
+            _dealStageRepository = dealStageRepository;
         }
 
         // GET: api/DealStage
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<object>>> GetStages()
+        public async Task<IActionResult> Get()
         {
-            // For a dropdown, we want unique stage names/display names
-            var stages = await _context.DealStages
-                .Select(s => new { s.Id, s.StageName, s.DisplayName })
-                .Distinct()
-                .ToListAsync();
-
-            return Ok(stages);
+            var dealStages = await _dealStageRepository.GetAllDealStages();
+            if (dealStages == null)
+            {
+                return NotFound();
+            }
+            return Ok(dealStages);
         }
     }
 }
+

@@ -1,7 +1,8 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using XLead_Server.Data;
-using XLead_Server.Models;
+﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using XLead_Server.Controllers;
+using XLead_Server.Interfaces;
+using XLead_Server.Repositories;
 
 namespace XLead_Server.Controllers
 {
@@ -9,22 +10,21 @@ namespace XLead_Server.Controllers
     [ApiController]
     public class AccountController : ControllerBase
     {
-        private readonly ApiDbContext _context;
-
-        public AccountController(ApiDbContext context)
+        private IAccountRepository _accountRepository;
+        public AccountController(IAccountRepository accountRepository)
         {
-            _context = context;
+            _accountRepository = accountRepository;
         }
 
         // GET: api/Account
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Account>>> GetAccounts()
+        public async Task<IActionResult> Get()
         {
-            // Only select the needed fields for the dropdown
-            var accounts = await _context.Accounts
-                .Select(a => new { a.Id, a.AccountName })
-                .ToListAsync();
-
+            var accounts = await _accountRepository.GetAllAccounts();
+            if (accounts == null)
+            {
+                return NotFound();
+            }
             return Ok(accounts);
         }
     }

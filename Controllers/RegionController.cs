@@ -1,8 +1,6 @@
-﻿// Controllers/RegionController.cs
+﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using XLead_Server.Data;
-using XLead_Server.Models;
+using XLead_Server.Interfaces;
 
 namespace XLead_Server.Controllers
 {
@@ -10,21 +8,21 @@ namespace XLead_Server.Controllers
     [ApiController]
     public class RegionController : ControllerBase
     {
-        private readonly ApiDbContext _context;
-
-        public RegionController(ApiDbContext context)
+        private IRegionRepository _regionRepository;
+        public RegionController(IRegionRepository regionRepository)
         {
-            _context = context;
+            _regionRepository = regionRepository;
         }
 
         // GET: api/Region
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Region>>> GetRegions()
+        public async Task<IActionResult> Get()
         {
-            var regions = await _context.Regions
-                .Select(r => new { r.Id, r.RegionName })
-                .ToListAsync();
-
+            var regions = await _regionRepository.GetAllRegions();
+            if (regions == null)
+            {
+                return NotFound();
+            }
             return Ok(regions);
         }
     }

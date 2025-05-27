@@ -1,3 +1,4 @@
+// XLead_Server/Interfaces/IDealRepository.cs
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using XLead_Server.DTOs;
@@ -7,8 +8,8 @@ namespace XLead_Server.Interfaces
 {
     public interface IDealRepository
     {
-        Task<Deal> AddDealAsync(Deal deal);
+        Task<DealReadDto?> AddDealAsync(DealCreateDto dealCreateDto);
         Task<DealReadDto?> GetDealByIdAsync(long id);
-        Task<IEnumerable<Deal>> GetAllDealsAsync();
+        Task<IEnumerable<DealReadDto>> GetAllDealsAsync(); // Changed to return DealReadDto for consistency
     }
 }

@@ -12,7 +12,11 @@ namespace XLead_Server.Models
         public long UpdatedBy { get; set; }
         public DateTime UpdatedAt { get; set; }
 
+
+
         public ICollection<Deal> Deals { get; set; }
+
+
 
     }
 

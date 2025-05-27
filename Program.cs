@@ -34,6 +34,7 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddScoped<ICompanyRepository, CompanyRepository>();
 builder.Services.AddScoped<IContactRepository, ContactRepository>();
 builder.Services.AddScoped<IDealRepository, DealRepository>();
+builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddAutoMapper(typeof(Program)); // Scans current assembly for profiles
 
 var app = builder.Build();

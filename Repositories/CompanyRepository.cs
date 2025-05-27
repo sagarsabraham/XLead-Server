@@ -20,7 +20,10 @@ namespace XLead_Server.Repositories
         public async Task<IEnumerable<CompanyReadDto>> GetAllCompaniesAsync()
         {
             var companies = await _context.Companies.ToListAsync();
-            return _mapper.Map<IEnumerable<CompanyReadDto>>(companies);
+            var dtos = _mapper.Map<IEnumerable<CompanyReadDto>>(companies);
+
+         
+            return dtos;
         }
 
         public async Task<Company> AddCompanyAsync(CompanyCreateDto dto)

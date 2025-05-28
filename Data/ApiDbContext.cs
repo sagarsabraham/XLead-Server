@@ -19,6 +19,8 @@ namespace XLead_Server.Data
         public DbSet<Country> Countries { get; set; }
         public DbSet<DealStage> DealStages { get; set; }
 
+        public DbSet<StageHistory> StageHistories { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -45,7 +47,20 @@ namespace XLead_Server.Data
                 .HasOne(c => c.Company)
                 .WithMany(co => co.Contacts)
                 .HasForeignKey(c => c.CompanyId)
-                .OnDelete(DeleteBehavior.Restrict); // Or Cascade
+                .OnDelete(DeleteBehavior.Restrict);
+            // Or Cascade
+            modelBuilder.Entity<StageHistory>()
+        .HasOne(sh => sh.Deal)
+        .WithMany()
+        .HasForeignKey(sh => sh.DealId)
+        .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<StageHistory>()
+                .HasOne(sh => sh.DealStage)
+                .WithMany()
+                .HasForeignKey(sh => sh.DealStageId)
+                .OnDelete(DeleteBehavior.Cascade);
+            // or DeleteBehavior.NoAction
 
             // Soft delete query filters (if you implement IsDeleted flag)
             // modelBuilder.Entity<Company>().HasQueryFilter(c => !c.IsDeleted);

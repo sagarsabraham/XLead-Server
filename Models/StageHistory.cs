@@ -9,7 +9,7 @@
         public DateTime CreatedAt { get; set; }
         public long UpdatedBy { get; set; }
         public DateTime UpdatedAt { get; set; }
-
         public Deal Deal { get; set; }
+
     }
 }

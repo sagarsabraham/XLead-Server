@@ -6,7 +6,7 @@ namespace XLead_Server.Models
     {
         public long Id { get; set; }
         public string CompanyName { get; set; }
-        //public string IndustryVerticalId { get; set; }
+      
         public string Website {  get; set; }
         public string CompanyPhoneNumber { get; set; }
         public bool IsActive { get; set; }

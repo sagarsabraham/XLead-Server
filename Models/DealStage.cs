@@ -11,8 +11,13 @@ namespace XLead_Server.Models
         public DateTime CreatedAt { get; set; }
         public long UpdatedBy { get; set; }
         public DateTime UpdatedAt { get; set; }
+        public ICollection<StageHistory> DealStageHistory { get; set; } = new List<StageHistory>();
 
-        public ICollection<Deal> Deals { get; set; }
+
+
+        public ICollection<Deal> Deals { get; set; }=new List<Deal>();
+
+
 
     }
 

@@ -1,6 +1,4 @@
-﻿using System.Numerics;
-
-namespace XLead_Server.Models
+﻿namespace XLead_Server.Models
 {
     public class Privilege
     {
@@ -8,6 +6,8 @@ namespace XLead_Server.Models
         public string PrivilegeName { get; set; }
         public long CreatedBy { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.Now;
-        public ICollection<UserPrivilege> UserPrivileges { get; set; }
+
+        public User Creator { get; set; }
+        public ICollection<UserPrivilege> UserPrivileges { get; set; } = new List<UserPrivilege>();
     }
 }

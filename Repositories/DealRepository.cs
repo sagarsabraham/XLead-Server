@@ -124,14 +124,14 @@ namespace XLead_Server.Repositories
         {
             var deal = await _context.Deals
                 .AsNoTracking() // Good for read operations
-                .Include(d => d.Account)
-                .Include(d => d.Region)
-                .Include(d => d.Domain)
-                .Include(d => d.RevenueType)
-                .Include(d => d.DU)
-                .Include(d => d.Country)
-                .Include(d => d.Contact)
-                .Include(d => d.DealStage)
+                .Include(d => d.AccountId)
+                .Include(d => d.RegionId)
+                .Include(d => d.DomainId)
+                .Include(d => d.RevenueTypeId)
+                .Include(d => d.DuId)
+                .Include(d => d.CountryId)
+                .Include(d => d.ContactId)
+                .Include(d => d.DealStageId)
                 .FirstOrDefaultAsync(d => d.Id == id);
 
             if (deal == null) return null;
@@ -141,25 +141,24 @@ namespace XLead_Server.Repositories
                 Id = deal.Id,
                 DealName = deal.DealName,
                 DealAmount = deal.DealAmount,
-               
-                AccountId = deal.AccountId,
-                AccountName = deal.Account?.AccountName,
+                AccountId = deal.AccountId, // Use AccountId directly
+                AccountName = null, // Set to null since 'Account' is not part of the 'Deal' entity
                 RegionId = deal.RegionId,
-                RegionName = deal.Region?.RegionName,
+                RegionName = deal.region?.RegionName,
                 DomainId = deal.DomainId,
-                DomainName = deal.Domain?.DomainName,
+                DomainName = deal.domain?.DomainName,
                 RevenueTypeId = deal.RevenueTypeId,
-                RevenueTypeName = deal.RevenueType?.RevenueTypeName,
+                RevenueTypeName = deal.revenueType?.RevenueTypeName,
                 DuId = deal.DuId,
-                DUName = deal.DU?.DUName,
+                DUName = deal.du?.DUName,
                 CountryId = deal.CountryId,
-                CountryName = deal.Country?.CountryName,
+                CountryName = deal.country?.CountryName,
                 Description = deal.Description,
                 Probability = deal.Probability,
                 DealStageId = deal.DealStageId,
-                StageName = deal.DealStage?.StageName,
+                StageName = deal.dealStage?.StageName,
                 ContactId = deal.ContactId,
-                ContactName = deal.Contact != null ? $"{deal.Contact.FirstName} {deal.Contact.LastName}".Trim() : null,
+                ContactName = deal.contact != null ? $"{deal.contact.FirstName} {deal.contact.LastName}".Trim() : null,
                 StartingDate = deal.StartingDate,
                 ClosingDate = deal.ClosingDate,
                 CreatedBy = deal.CreatedBy,
@@ -171,14 +170,14 @@ namespace XLead_Server.Repositories
         {
             return await _context.Deals
                 .AsNoTracking()
-                .Include(d => d.Account)
-                .Include(d => d.Region)
-                .Include(d => d.Domain)
-                .Include(d => d.RevenueType)
-                .Include(d => d.DU)
-                .Include(d => d.Country)
-                .Include(d => d.Contact)
-                .Include(d => d.DealStage)
+                .Include(d => d.account)
+                .Include(d => d.region)
+                .Include(d => d.domain)
+                .Include(d => d.revenueType)
+                .Include(d => d.du)
+                .Include(d => d.country)
+                .Include(d => d.contact)
+                .Include(d => d.dealStage)
                 .Select(deal => new DealReadDto // Project to DTO
                 {
                     Id = deal.Id,
@@ -186,23 +185,23 @@ namespace XLead_Server.Repositories
                     DealAmount = deal.DealAmount,
                    
                     AccountId = deal.AccountId,
-                    AccountName = deal.Account != null ? deal.Account.AccountName : null,
+                    AccountName = deal.account != null ? deal.account.AccountName : null,
                     RegionId = deal.RegionId,
-                    RegionName = deal.Region != null ? deal.Region.RegionName : null,
+                    RegionName = deal.region != null ? deal.region.RegionName : null,
                     DomainId = deal.DomainId,
-                    DomainName = deal.Domain != null ? deal.Domain.DomainName : null,
+                    DomainName = deal.domain != null ? deal.domain.DomainName : null,
                     RevenueTypeId = deal.RevenueTypeId,
-                    RevenueTypeName = deal.RevenueType != null ? deal.RevenueType.RevenueTypeName : null,
+                    RevenueTypeName = deal.revenueType != null ? deal.revenueType.RevenueTypeName : null,
                     DuId = deal.DuId,
-                    DUName = deal.DU != null ? deal.DU.DUName : null,
+                    DUName = deal.du != null ? deal.du.DUName : null,
                     CountryId = deal.CountryId,
-                    CountryName = deal.Country != null ? deal.Country.CountryName : null,
+                    CountryName = deal.country != null ? deal.country.CountryName : null,
                     Description = deal.Description,
                     Probability = deal.Probability,
                     DealStageId = deal.DealStageId,
-                    StageName = deal.DealStage != null ? deal.DealStage.StageName : null,
+                    StageName = deal.dealStage != null ? deal.dealStage.StageName : null,
                     ContactId = deal.ContactId,
-                    ContactName = deal.Contact != null ? $"{deal.Contact.FirstName} {deal.Contact.LastName}".Trim() : null,
+                    ContactName = deal.contact != null ? $"{deal.contact.FirstName} {deal.contact.LastName}".Trim() : null,
                     StartingDate = deal.StartingDate,
                     ClosingDate = deal.ClosingDate,
                     CreatedBy = deal.CreatedBy,

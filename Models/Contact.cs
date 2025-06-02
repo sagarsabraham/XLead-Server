@@ -1,6 +1,4 @@
-﻿using System.Numerics;
-
-namespace XLead_Server.Models
+﻿namespace XLead_Server.Models
 {
     public class Contact
     {
@@ -9,13 +7,14 @@ namespace XLead_Server.Models
         public string LastName { get; set; }
         public string Email { get; set; }
         public string PhoneNumber { get; set; }
-        public long CompanyId {  get; set; }
+        public long CompanyId { get; set; }
         public bool IsActive { get; set; }
         public long CreatedBy { get; set; }
-        public DateTime CreatedAt { get; set; } = DateTime.Now;
+        public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
-        public Company Company { get; set; }
-        //public User CreatedByUser { get; set; }
-        public ICollection<Deal> Deals { get; set; }
+        public Company company { get; set; }
+        public User Creator { get; set; }
+
+        public ICollection<Deal> Deals { get; set; } = new List<Deal>();
     }
 }

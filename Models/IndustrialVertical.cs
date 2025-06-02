@@ -1,13 +1,13 @@
-namespace XLead_Server.Models
+﻿namespace XLead_Server.Models
 {
-    public class Country
+    public class IndustrialVertical
     {
         public long Id { get; set; }
-        public string CountryName { get; set; }
+        public string IndustryName { get; set; }
         public long CreatedBy { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.Now;
 
         public User Creator { get; set; }
-        public ICollection<Deal> Deals { get; set; } = new List<Deal>();
+        public ICollection<Company> Companies { get; set; }
     }
 }

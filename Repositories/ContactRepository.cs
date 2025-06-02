@@ -79,7 +79,7 @@ namespace XLead_Server.Repositories
         public async Task<IEnumerable<ContactReadDto>> GetAllContactsAsync()
         {
             var contacts = await _context.Contacts
-                                         .Include(c => c.Company) // Include Company for CompanyName
+                                         .Include(c => c.company) // Include Company for CompanyName
                                          .ToListAsync();
             // This mapping relies on AutoMapper profiles being set up correctly.
             // Specifically, how Contact.Company.CompanyName maps to ContactReadDto.CompanyName

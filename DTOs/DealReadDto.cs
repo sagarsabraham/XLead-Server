@@ -9,17 +9,17 @@ namespace XLead_Server.DTOs
         public string DealName { get; set; }
         public decimal DealAmount { get; set; }
         public string SalespersonName { get; set; }
-        public int? AccountId { get; set; }
+        public long? AccountId { get; set; }
         public string? AccountName { get; set; }
-        public int? RegionId { get; set; }
+        public long? RegionId { get; set; }
         public string? RegionName { get; set; }
-        public int? DomainId { get; set; }
+        public long? DomainId { get; set; }
         public string? DomainName { get; set; }
-        public int? RevenueTypeId { get; set; }
+        public long? RevenueTypeId { get; set; }
         public string? RevenueTypeName { get; set; }
-        public int? DuId { get; set; }
+        public long? DuId { get; set; }
         public string? DUName { get; set; }
-        public int? CountryId { get; set; }
+        public long? CountryId { get; set; }
         public string? CountryName { get; set; }
         public string? Description { get; set; }
         public decimal? Probability { get; set; }

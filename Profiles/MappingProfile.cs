@@ -19,7 +19,7 @@ namespace XLead_Server.Profiles
             
             CreateMap<Contact, ContactReadDto>()
                 .ForMember(dest => dest.FullName, opt => opt.MapFrom(src => $"{src.FirstName} {src.LastName}".Trim()))
-                .ForMember(dest => dest.CompanyName, opt => opt.MapFrom(src => src.Company.CompanyName));
+                .ForMember(dest => dest.CompanyName, opt => opt.MapFrom(src => src.company.CompanyName));
 
 
         }

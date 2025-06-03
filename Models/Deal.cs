@@ -1,7 +1,4 @@
-﻿using System.Net.Mail;
-using System.Numerics;
-
-namespace XLead_Server.Models
+﻿namespace XLead_Server.Models
 {
     public class Deal
     {
@@ -27,8 +24,10 @@ namespace XLead_Server.Models
         public DateTime StartingDate { get; set; }
         public DateTime ClosingDate { get; set; }
         public long CreatedBy { get; set; }
-        public DateTime CreatedAt { get; set; } = DateTime.Now;
-        public DateTime UpdatedAt { get; set; }
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow; // Changed to UtcNow for consistency
+        public DateTime UpdatedAt { get; set; } = DateTime.UtcNow; // Added default value for consistency
+        public long DealStageId { get; set; } // Added foreign key for current DealStage
+        public DealStage DealStage { get; set; } // Added navigation property for current DealStage
         public ICollection<DealStage> DealStages { get; set; } = new List<DealStage>();
         public ICollection<StageHistory> DealStageHistory { get; set; } = new List<StageHistory>();
         public ICollection<Attachment> Attachments { get; set; } = new List<Attachment>();

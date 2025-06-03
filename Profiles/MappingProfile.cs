@@ -8,7 +8,8 @@ namespace XLead_Server.Profiles
     {
         public MappingProfile()
         {
-            
+            CreateMap<Privilege, PrivilegeReadDto>();
+
             CreateMap<CustomerCreateDto, Customer>();
             CreateMap<ContactCreateDto, Contact>();
 

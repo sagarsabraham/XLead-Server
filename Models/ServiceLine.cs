@@ -1,18 +1,16 @@
-﻿namespace XLead_Server.Models
+﻿using System.Collections.Generic;
+
+namespace XLead_Server.Models 
 {
-    public class Attachment
+    public class ServiceLine
     {
         public long Id { get; set; }
-        public string FileName { get; set; }
-        public string S3UploadName { get; set; }
-        public long DealId { get; set; }
+        public string ServiceName { get; set; }
         public long CreatedBy { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public long? UpdatedBy { get; set; }
         public DateTime? UpdatedAt { get; set; }
-
-        // Navigation properties
         public User Creator { get; set; }
-        public Deal Deal { get; set; }
+        public ICollection<Deal> Deals { get; set; }
     }
 }

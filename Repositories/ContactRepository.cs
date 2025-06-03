@@ -34,7 +34,7 @@ namespace XLead_Server.Repositories
                 LastName = dto.LastName,
                 Email = dto.Email,
                 PhoneNumber = dto.PhoneNumber,
-                CompanyId = dto.CompanyId, // Ensure CompanyId is correctly set in the DTO
+                CustomerId = dto.CustomerId, // Ensure CompanyId is correctly set in the DTO
                 CreatedBy = dto.CreatedBy,
                 IsActive = true, // Default to active, or get from DTO if available
                 CreatedAt = DateTime.UtcNow,
@@ -51,7 +51,7 @@ namespace XLead_Server.Repositories
             return await _context.Contacts.ToListAsync();
         }
 
-        public async Task<Contact?> GetByFullNameAndCompanyIdAsync(string firstName, string? lastName, long companyId)
+        public async Task<Contact?> GetByFullNameAndCustomerIdAsync(string firstName, string? lastName, long customerId)
         {
             // Normalize lastName for query if it can be null or empty
             var normalizedLastName = string.IsNullOrWhiteSpace(lastName) ? null : lastName;
@@ -63,7 +63,7 @@ namespace XLead_Server.Repositories
                 return await _context.Contacts
                     .FirstOrDefaultAsync(c => c.FirstName.ToLower() == lowerFirstName &&
                                               (c.LastName == null || c.LastName == "") &&
-                                              c.CompanyId == companyId);
+                                              c.CustomerId == customerId);
             }
             else
             {
@@ -72,14 +72,14 @@ namespace XLead_Server.Repositories
                 return await _context.Contacts
                     .FirstOrDefaultAsync(c => c.FirstName.ToLower() == lowerFirstName &&
                                               c.LastName != null && c.LastName.ToLower() == lowerLastName &&
-                                              c.CompanyId == companyId);
+                                              c.CustomerId == customerId);
             }
         }
 
         public async Task<IEnumerable<ContactReadDto>> GetAllContactsAsync()
         {
             var contacts = await _context.Contacts
-                                         .Include(c => c.Company) // Include Company for CompanyName
+                                         .Include(c => c.customer) // Include Company for CompanyName
                                          .ToListAsync();
             // This mapping relies on AutoMapper profiles being set up correctly.
             // Specifically, how Contact.Company.CompanyName maps to ContactReadDto.CompanyName

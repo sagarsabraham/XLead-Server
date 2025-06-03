@@ -9,6 +9,7 @@ namespace XLead_Server.Models
     {
         public long Id { get; set; }
         public string Name { get; set; }
+        public string Role { get; set; }
         public long? AssignedTo { get; set; }
         public long? CreatedBy { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.Now;

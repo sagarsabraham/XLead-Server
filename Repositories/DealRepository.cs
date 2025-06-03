@@ -210,5 +210,37 @@ namespace XLead_Server.Repositories
                 })
                 .ToListAsync();
         }
+
+        public async Task<DealReadDto?> UpdateDealStageAsync(long id, DealUpdateDTO dto)
+        {
+            // 1. Find the deal by ID
+            var deal = await _context.Deals
+                .FirstOrDefaultAsync(d => d.Id == id);
+
+            if (deal == null)
+            {
+                return null; // Deal not found
+            }
+
+            // 2. Find the stage by StageName
+            var stage = await _context.DealStages
+                .FirstOrDefaultAsync(s => s.StageName == dto.StageName);
+
+            if (stage == null)
+            {
+                throw new InvalidOperationException($"Stage '{dto.StageName}' not found.");
+            }
+
+            // 3. Update the deal's stage
+            deal.DealStageId = stage.Id;
+            deal.UpdatedAt = DateTime.UtcNow;
+
+            // 4. Save changes to the database
+            await _context.SaveChangesAsync();
+
+            // 5. Retrieve the updated deal with all related data
+            return await GetDealByIdAsync(deal.Id);
+
+        }
     }
 }

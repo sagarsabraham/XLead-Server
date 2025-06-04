@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using System.Linq;
 using System.Threading.Tasks;
 using XLead_Server.Data;
-
+using XLead_Server.Models;
 namespace XLead_Server.Controllers
 {
     [Route("api/[controller]")]
@@ -17,20 +17,25 @@ namespace XLead_Server.Controllers
         {
             _context = context;
         }
-
-        // GET: api/Count/ClosedWonCount
         [HttpGet("ClosedWonCount")]
         public async Task<IActionResult> GetClosedWonCount()
         {
-            var closedWonCount = await _context.Deals
-                .Join(_context.DealStages,
-                      d => d.DealStageId,
-                      ds => ds.Id,
-                      (d, ds) => new { d, ds })
-                .Where(x => x.ds.DisplayName == "Closed Won")
+            var closedWonCount = await _context.DealStages
+                .Where(ds => ds.DisplayName.ToLower() == "closed won")
+                .Select(ds => ds.Id)
+                .Distinct()
                 .CountAsync();
 
-            return Ok(new { DealCount = closedWonCount });
+            return Ok(new { ClosedWonCounts = closedWonCount });
         }
+
     }
 }
+
+
+
+
+            
+
+
+

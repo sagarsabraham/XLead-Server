@@ -1,13 +1,13 @@
 
 
-    INSERT INTO Accounts (Id, AccountName) VALUES (1, 'Acme Corporation');
+    `INSERT INTO Accounts (Id, AccountName) VALUES (1, 'Acme Corporation');
     INSERT INTO Regions (Id, RegionName) VALUES (1, 'North America');
     INSERT INTO Domains (Id, DomainName) VALUES (1, 'Technology');
     INSERT INTO RevenueTypes (Id, RevenueTypeName) VALUES (1, 'Recurring');
     INSERT INTO DUs (Id, DUName) VALUES (1, 'Business Unit 1');
     INSERT INTO Countries (Id, CountryName) VALUES (1, 'United States');
     INSERT INTO Users (Id, Name, CreatedBy, AssignedTo, CreatedAt) VALUES (1, 'Admin User', NULL, NULL, GETDATE());
-    INSERT INTO Companies (Id, CompanyName, IndustryVerticalId, Website, CompanyPhoneNumber, IsActive, CreatedBy, CreatedAt, UpdatedBy, UpdatedAt, UserId)
+    INSERT INTO Companies (Id, CompanyName, IndustryVerticalId, W`ebsite, CompanyPhoneNumber, IsActive, CreatedBy, CreatedAt, UpdatedBy, UpdatedAt, UserId)
 VALUES (1, 'Acme Corp', '1', 'https://acme.com', '123-456-7890', 1, 1, GETDATE(), 1, GETDATE(), 1);
 INSERT INTO Contacts (Id, FirstName, LastName, Email, PhoneNumber, CompanyId, IsActive, CreatedBy, CreatedAt, UpdatedAt, UserId)
 VALUES (1, 'John', 'Doe', 'john.doe@acme.com', '555-1234', 1, 1, 1, GETDATE(), GETDATE(), 1);

@@ -1,8 +1,8 @@
-// XLead_Server/Repositories/DealRepository.cs
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using AutoMapper;
 using Microsoft.EntityFrameworkCore;
 using XLead_Server.Data;
 using XLead_Server.DTOs;
@@ -14,54 +14,66 @@ namespace XLead_Server.Repositories
     public class DealRepository : IDealRepository
     {
         private readonly ApiDbContext _context;
-        private readonly ICompanyRepository _companyRepository;
+        private readonly ICustomerRepository _customerRepository;
         private readonly IContactRepository _contactRepository;
+        private readonly IMapper _mapper;
 
         public DealRepository(
             ApiDbContext context,
-            ICompanyRepository companyRepository,
-            IContactRepository contactRepository)
+            ICustomerRepository customerRepository,
+            IContactRepository contactRepository,
+            IMapper mapper)
         {
             _context = context;
-            _companyRepository = companyRepository;
+            _customerRepository = customerRepository;
             _contactRepository = contactRepository;
+            _mapper = mapper;
         }
 
         public async Task<DealReadDto?> AddDealAsync(DealCreateDto dto)
         {
-            // 1. Find or Create Company
-            Company? company = await _companyRepository.GetByNameAsync(dto.CompanyName);
-            if (company == null)
+            // Validate required foreign keys exist
+            if (dto.RegionId.HasValue && !await _context.Regions.AnyAsync(r => r.Id == dto.RegionId.Value))
+                throw new InvalidOperationException($"Region with ID {dto.RegionId.Value} does not exist.");
+            if (dto.DealStageId.HasValue && !await _context.DealStages.AnyAsync(ds => ds.Id == dto.DealStageId.Value))
+                throw new InvalidOperationException($"Deal Stage with ID {dto.DealStageId.Value} does not exist.");
+            if (dto.RevenueTypeId.HasValue && !await _context.RevenueTypes.AnyAsync(rt => rt.Id == dto.RevenueTypeId.Value))
+                throw new InvalidOperationException($"Revenue Type with ID {dto.RevenueTypeId.Value} does not exist.");
+            if (dto.DuId.HasValue && !await _context.DUs.AnyAsync(du => du.Id == dto.DuId.Value))
+                throw new InvalidOperationException($"DU with ID {dto.DuId.Value} does not exist.");
+            if (dto.CountryId.HasValue && !await _context.Countries.AnyAsync(c => c.Id == dto.CountryId.Value))
+                throw new InvalidOperationException($"Country with ID {dto.CountryId.Value} does not exist.");
+
+            // 1. Find or Create Customer
+            Customer? customer = await _customerRepository.GetByNameAsync(dto.CustomerName);
+            if (customer == null)
             {
-                var companyCreateDto = new CompanyCreateDto
+                var customerCreateDto = new CustomerCreateDto
                 {
-                    CompanyName = dto.CompanyName,
-                    // Provide sensible defaults or make these part of DealCreateDto if needed
-                    // If these fields are required for a company, this logic needs adjustment
+                    CustomerName = dto.CustomerName,
                     Website = null,
-                    CompanyPhoneNumber = null,
+                    CustomerPhoneNumber = null,
                     CreatedBy = dto.CreatedBy
                 };
-                company = await _companyRepository.AddCompanyAsync(companyCreateDto);
-                if (company == null)
+                customer = await _customerRepository.AddCustomerAsync(customerCreateDto);
+                if (customer == null)
                 {
-                    // Consider throwing a more specific exception or returning a result object
-                    throw new InvalidOperationException($"Failed to create company: {dto.CompanyName}");
+                    throw new InvalidOperationException($"Failed to create customer: {dto.CustomerName}");
                 }
             }
 
             // 2. Find or Create Contact
             string firstName;
-            string? lastName = null; // Initialize lastName as nullable
+            string? lastName = null;
             var nameParts = dto.ContactFullName.Trim().Split(new[] { ' ' }, 2, StringSplitOptions.RemoveEmptyEntries);
 
-            firstName = nameParts.Length > 0 ? nameParts[0] : "Unknown"; // Default if empty string somehow passed
+            firstName = nameParts.Length > 0 ? nameParts[0] : "Unknown";
             if (nameParts.Length > 1)
             {
                 lastName = nameParts[1];
             }
 
-            Contact? contact = await _contactRepository.GetByFullNameAndCompanyIdAsync(firstName, lastName, company.Id);
+            Contact? contact = await _contactRepository.GetByFullNameAndCustomerIdAsync(firstName, lastName, customer.Id);
 
             if (contact == null)
             {
@@ -69,10 +81,11 @@ namespace XLead_Server.Repositories
                 {
                     FirstName = firstName,
                     LastName = lastName,
-                    Email = null, // Default or make part of DealCreateDto
-                    PhoneNumber = null, // Default or make part of DealCreateDto
-                    CompanyId = company.Id,
-                    CompanyName = company.CompanyName, // For DTO consistency, though CompanyId is primary
+                    Email = dto.ContactEmail,
+                    PhoneNumber = dto.ContactPhoneNumber,
+                    Designation = dto.ContactDesignation,
+                    CustomerId = customer.Id,
+                    CustomerName = customer.CustomerName,
                     CreatedBy = dto.CreatedBy
                 };
                 contact = await _contactRepository.AddContactAsync(contactCreateDto);
@@ -81,133 +94,63 @@ namespace XLead_Server.Repositories
                     throw new InvalidOperationException($"Failed to create contact: {dto.ContactFullName}");
                 }
             }
-
-            // Defensive check, though AddContactAsync should ensure ID is set by EF Core
-            if (contact.Id == 0)
+            else
             {
-                throw new InvalidOperationException($"Contact '{dto.ContactFullName}' for company '{company.CompanyName}' has an invalid ID after creation/retrieval.");
+                // Update existing contact with new details if provided
+                contact.Email = dto.ContactEmail ?? contact.Email;
+                contact.PhoneNumber = dto.ContactPhoneNumber ?? contact.PhoneNumber;
+                contact.Designation = dto.ContactDesignation ?? contact.Designation;
+                _context.Contacts.Update(contact);
+                await _context.SaveChangesAsync();
             }
 
-            // 3. Create Deal entity
-            var deal = new Deal
+            if (contact.Id == 0)
             {
-                DealName = dto.Title,
-                DealAmount = dto.Amount,
-              
-                Description = dto.Description,
-                Probability = dto.Probability??= 0,
-                //StartingDate = dto.StartingDate,
-                // Fix for CS0266 and CS8629: Ensure nullable DateTime? is handled properly by providing a default value or throwing an exception if null.
-                StartingDate = dto.StartingDate ?? throw new InvalidOperationException("StartingDate cannot be null."),
-                ClosingDate = dto.ClosingDate ?? throw new InvalidOperationException("ClosingDate cannot be null."),
-                //ClosingDate = dto.ClosingDate,
-                AccountId = dto.AccountId ??= 0,
-                RegionId = dto.RegionId ??= 0,
-                DomainId = dto.DomainId ??= 0,
-                RevenueTypeId = dto.RevenueTypeId??=0,
-                DuId = dto.DuId??=0,
-                CountryId = dto.CountryId??=0,
-                DealStageId = dto.DealStageId??=0,
-                ContactId = contact.Id,
-                CreatedBy = dto.CreatedBy,
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow
-            };
+                throw new InvalidOperationException($"Contact '{dto.ContactFullName}' for customer '{customer.CustomerName}' has an invalid ID after creation/retrieval.");
+            }
+
+            // 3. Create Deal entity using AutoMapper
+            var deal = _mapper.Map<Deal>(dto);
+            deal.ContactId = contact.Id;
 
             _context.Deals.Add(deal);
             await _context.SaveChangesAsync();
 
-            return await GetDealByIdAsync(deal.Id); // Return the full DTO
+            return await GetDealByIdAsync(deal.Id);
         }
 
         public async Task<DealReadDto?> GetDealByIdAsync(long id)
         {
             var deal = await _context.Deals
-                .AsNoTracking() // Good for read operations
-                .Include(d => d.Account)
-                .Include(d => d.Region)
-                .Include(d => d.Domain)
-                .Include(d => d.RevenueType)
-                .Include(d => d.DU)
-                .Include(d => d.Country)
-                .Include(d => d.Contact)
-                .Include(d => d.DealStage)
+                .AsNoTracking()
+                .Include(d => d.account)
+                .Include(d => d.region)
+                .Include(d => d.domain)
+                .Include(d => d.revenueType)
+                .Include(d => d.du)
+                .Include(d => d.country)
+                .Include(d => d.contact)
+                .Include(d => d.dealStage)
                 .FirstOrDefaultAsync(d => d.Id == id);
 
             if (deal == null) return null;
 
-            return new DealReadDto
-            {
-                Id = deal.Id,
-                DealName = deal.DealName,
-                DealAmount = deal.DealAmount,
-               
-                AccountId = deal.AccountId,
-                AccountName = deal.Account?.AccountName,
-                RegionId = deal.RegionId,
-                RegionName = deal.Region?.RegionName,
-                DomainId = deal.DomainId,
-                DomainName = deal.Domain?.DomainName,
-                RevenueTypeId = deal.RevenueTypeId,
-                RevenueTypeName = deal.RevenueType?.RevenueTypeName,
-                DuId = deal.DuId,
-                DUName = deal.DU?.DUName,
-                CountryId = deal.CountryId,
-                CountryName = deal.Country?.CountryName,
-                Description = deal.Description,
-                Probability = deal.Probability,
-                DealStageId = deal.DealStageId,
-                StageName = deal.DealStage?.StageName,
-                ContactId = deal.ContactId,
-                ContactName = deal.Contact != null ? $"{deal.Contact.FirstName} {deal.Contact.LastName}".Trim() : null,
-                StartingDate = deal.StartingDate,
-                ClosingDate = deal.ClosingDate,
-                CreatedBy = deal.CreatedBy,
-                CreatedAt = deal.CreatedAt
-            };
+            return _mapper.Map<DealReadDto>(deal);
         }
 
         public async Task<IEnumerable<DealReadDto>> GetAllDealsAsync()
         {
             return await _context.Deals
                 .AsNoTracking()
-                .Include(d => d.Account)
-                .Include(d => d.Region)
-                .Include(d => d.Domain)
-                .Include(d => d.RevenueType)
-                .Include(d => d.DU)
-                .Include(d => d.Country)
-                .Include(d => d.Contact)
-                .Include(d => d.DealStage)
-                .Select(deal => new DealReadDto // Project to DTO
-                {
-                    Id = deal.Id,
-                    DealName = deal.DealName,
-                    DealAmount = deal.DealAmount,
-                   
-                    AccountId = deal.AccountId,
-                    AccountName = deal.Account != null ? deal.Account.AccountName : null,
-                    RegionId = deal.RegionId,
-                    RegionName = deal.Region != null ? deal.Region.RegionName : null,
-                    DomainId = deal.DomainId,
-                    DomainName = deal.Domain != null ? deal.Domain.DomainName : null,
-                    RevenueTypeId = deal.RevenueTypeId,
-                    RevenueTypeName = deal.RevenueType != null ? deal.RevenueType.RevenueTypeName : null,
-                    DuId = deal.DuId,
-                    DUName = deal.DU != null ? deal.DU.DUName : null,
-                    CountryId = deal.CountryId,
-                    CountryName = deal.Country != null ? deal.Country.CountryName : null,
-                    Description = deal.Description,
-                    Probability = deal.Probability,
-                    DealStageId = deal.DealStageId,
-                    StageName = deal.DealStage != null ? deal.DealStage.StageName : null,
-                    ContactId = deal.ContactId,
-                    ContactName = deal.Contact != null ? $"{deal.Contact.FirstName} {deal.Contact.LastName}".Trim() : null,
-                    StartingDate = deal.StartingDate,
-                    ClosingDate = deal.ClosingDate,
-                    CreatedBy = deal.CreatedBy,
-                    CreatedAt = deal.CreatedAt
-                })
+                .Include(d => d.account)
+                .Include(d => d.region)
+                .Include(d => d.domain)
+                .Include(d => d.revenueType)
+                .Include(d => d.du)
+                .Include(d => d.country)
+                .Include(d => d.contact)
+                .Include(d => d.dealStage)
+                .Select(deal => _mapper.Map<DealReadDto>(deal))
                 .ToListAsync();
         }
     }

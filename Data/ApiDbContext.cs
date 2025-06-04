@@ -19,6 +19,8 @@ namespace XLead_Server.Data
         public DbSet<Country> Countries { get; set; }
         public DbSet<DealStage> DealStages { get; set; }
 
+        public DbSet<User> Users { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);

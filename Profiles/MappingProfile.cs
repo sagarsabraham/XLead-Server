@@ -9,17 +9,17 @@ namespace XLead_Server.Profiles
         public MappingProfile()
         {
             
-            CreateMap<CompanyCreateDto, Company>();
+            CreateMap<CustomerCreateDto, Customer>();
             CreateMap<ContactCreateDto, Contact>();
 
            
-            CreateMap<Company, CompanyReadDto>()
+            CreateMap<Customer, CustomerReadDto>()
                  .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.IsActive ? "Active" : "Not Active"));
 
             
             CreateMap<Contact, ContactReadDto>()
                 .ForMember(dest => dest.FullName, opt => opt.MapFrom(src => $"{src.FirstName} {src.LastName}".Trim()))
-                .ForMember(dest => dest.CompanyName, opt => opt.MapFrom(src => src.company.CompanyName));
+                .ForMember(dest => dest.CustomerName, opt => opt.MapFrom(src => src.customer.CustomerName));
 
 
         }

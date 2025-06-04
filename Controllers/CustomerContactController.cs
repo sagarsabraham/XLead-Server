@@ -9,24 +9,24 @@ namespace XLead_Server.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class CompanyContactController : ControllerBase
+    public class CustomerContactController : ControllerBase
     {
-        private readonly ICompanyRepository _companyService;
+        private readonly ICustomerRepository _customerService;
         private readonly IContactRepository _contactService;
         private readonly IMapper _mapper;
 
-        public CompanyContactController(ICompanyRepository companyService, IContactRepository contactService, IMapper mapper)
+        public CustomerContactController(ICustomerRepository customerService, IContactRepository contactService, IMapper mapper)
         {
-            _companyService = companyService;
+            _customerService = customerService;
             _contactService = contactService;
             _mapper = mapper;
         }
 
-        [HttpPost("company")]
-        public async Task<IActionResult> AddCompany([FromBody] CompanyCreateDto dto)
+        [HttpPost("customer")]
+        public async Task<IActionResult> AddCustomer([FromBody] CustomerCreateDto dto)
         {
 
-            var result = await _companyService.AddCompanyAsync(dto);
+            var result = await _customerService.AddCustomerAsync(dto);
             return Ok(result);
         }
        
@@ -34,10 +34,10 @@ namespace XLead_Server.Controllers
         [HttpPost("contact")]
         public async Task<IActionResult> AddContact([FromBody] ContactCreateDto dto)
         {
-            var company = await _companyService.GetByNameAsync(dto.CompanyName);
-            if (company == null) return BadRequest("Company not found");
+            var customer = await _customerService.GetByNameAsync(dto.CustomerName);
+            if (customer == null) return BadRequest("Customer not found");
 
-            dto.CompanyId = company.Id;
+            dto.CustomerId = customer.Id;
 
             var contactEntity = await _contactService.AddContactAsync(dto);
 
@@ -48,17 +48,17 @@ namespace XLead_Server.Controllers
 
 
 
-        [HttpGet("company-contact-map")]
-        public async Task<IActionResult> GetCompanyContactMap()
+        [HttpGet("customer-contact-map")]
+        public async Task<IActionResult> GetCustomerContactMap()
         {
-            var map = await _companyService.GetCompanyContactMapAsync();
+            var map = await _customerService.GetCustomerContactMapAsync();
             return Ok(map);
         }
-        [HttpGet("companies")]
-        public async Task<IActionResult> GetCompanies()
+        [HttpGet("customers")]
+        public async Task<IActionResult> GetCustomers()
         {
-            var companies = await _companyService.GetAllCompaniesAsync();
-            return Ok(companies);
+            var customers = await _customerService.GetAllCustomersAsync();
+            return Ok(customers);
         }
 
         [HttpGet("contacts")]

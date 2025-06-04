@@ -13,8 +13,8 @@ namespace XLead_Server.DTOs
         [Range(0, double.MaxValue, ErrorMessage = "Amount must be a non-negative value.")]
         public decimal Amount { get; set; }
 
-        [Required(ErrorMessage = "Company Name is required.")]
-        public string CompanyName { get; set; }
+        [Required(ErrorMessage = "Customer Name is required.")]
+        public string CustomerName { get; set; }
 
         [Required(ErrorMessage = "Contact Full Name is required.")]
         public string ContactFullName { get; set; }

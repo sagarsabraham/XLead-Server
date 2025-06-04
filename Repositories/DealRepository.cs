@@ -14,39 +14,39 @@ namespace XLead_Server.Repositories
     public class DealRepository : IDealRepository
     {
         private readonly ApiDbContext _context;
-        private readonly ICompanyRepository _companyRepository;
+        private readonly ICustomerRepository _customerRepository;
         private readonly IContactRepository _contactRepository;
 
         public DealRepository(
             ApiDbContext context,
-            ICompanyRepository companyRepository,
+            ICustomerRepository customerRepository,
             IContactRepository contactRepository)
         {
             _context = context;
-            _companyRepository = companyRepository;
+            _customerRepository = customerRepository;
             _contactRepository = contactRepository;
         }
 
         public async Task<DealReadDto?> AddDealAsync(DealCreateDto dto)
         {
             // 1. Find or Create Company
-            Company? company = await _companyRepository.GetByNameAsync(dto.CompanyName);
-            if (company == null)
+            Customer? customer = await _customerRepository.GetByNameAsync(dto.CustomerName);
+            if (customer == null)
             {
-                var companyCreateDto = new CompanyCreateDto
+                var customerCreateDto = new CustomerCreateDto
                 {
-                    CompanyName = dto.CompanyName,
+                    CustomerName = dto.CustomerName,
                     // Provide sensible defaults or make these part of DealCreateDto if needed
                     // If these fields are required for a company, this logic needs adjustment
                     Website = null,
-                    CompanyPhoneNumber = null,
+                    CustomerPhoneNumber = null,
                     CreatedBy = dto.CreatedBy
                 };
-                company = await _companyRepository.AddCompanyAsync(companyCreateDto);
-                if (company == null)
+                customer = await _customerRepository.AddCustomerAsync(customerCreateDto);
+                if (customer == null)
                 {
                     // Consider throwing a more specific exception or returning a result object
-                    throw new InvalidOperationException($"Failed to create company: {dto.CompanyName}");
+                    throw new InvalidOperationException($"Failed to create company: {dto.CustomerName}");
                 }
             }
 
@@ -61,7 +61,7 @@ namespace XLead_Server.Repositories
                 lastName = nameParts[1];
             }
 
-            Contact? contact = await _contactRepository.GetByFullNameAndCompanyIdAsync(firstName, lastName, company.Id);
+            Contact? contact = await _contactRepository.GetByFullNameAndCustomerIdAsync(firstName, lastName, customer.Id);
 
             if (contact == null)
             {
@@ -71,8 +71,8 @@ namespace XLead_Server.Repositories
                     LastName = lastName,
                     Email = null, // Default or make part of DealCreateDto
                     PhoneNumber = null, // Default or make part of DealCreateDto
-                    CompanyId = company.Id,
-                    CompanyName = company.CompanyName, // For DTO consistency, though CompanyId is primary
+                    CustomerId = customer.Id,
+                    CustomerName = customer.CustomerName, // For DTO consistency, though CompanyId is primary
                     CreatedBy = dto.CreatedBy
                 };
                 contact = await _contactRepository.AddContactAsync(contactCreateDto);
@@ -85,7 +85,7 @@ namespace XLead_Server.Repositories
             // Defensive check, though AddContactAsync should ensure ID is set by EF Core
             if (contact.Id == 0)
             {
-                throw new InvalidOperationException($"Contact '{dto.ContactFullName}' for company '{company.CompanyName}' has an invalid ID after creation/retrieval.");
+                throw new InvalidOperationException($"Contact '{dto.ContactFullName}' for company '{customer.CustomerName}' has an invalid ID after creation/retrieval.");
             }
 
             // 3. Create Deal entity

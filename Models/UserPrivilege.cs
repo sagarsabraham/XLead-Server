@@ -5,7 +5,7 @@
         public long UserId { get; set; }
         public long PrivilegeId { get; set; }
         public long CreatedBy { get; set; }
-        public DateTime CreatedAt { get; set; } = DateTime.Now;
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public long? UpdatedBy { get; set; }
         public DateTime? UpdatedAt { get; set; }
 

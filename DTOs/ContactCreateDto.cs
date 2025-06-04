@@ -20,7 +20,7 @@ namespace XLead_Server.DTOs
         public string? PhoneNumber { get; set; }
 
         [Required]
-        public long CompanyId { get; set; } // Used when creating contact for existing company
+        public long CustomerId { get; set; } // Used when creating contact for existing company
 
         [Required]
         public long CreatedBy { get; set; }
@@ -28,6 +28,6 @@ namespace XLead_Server.DTOs
         // This is used by CompanyContactController but might not be needed
         // if CompanyId is always reliably set.
         // For DealRepository logic where company might be created, CompanyId is more direct.
-        public string? CompanyName { get; set; }
+        public string? CustomerName { get; set; }
     }
 }

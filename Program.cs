@@ -32,7 +32,7 @@ builder.Services.AddDbContext<ApiDbContext>(option =>
 //builder.Services.AddScoped<IAttachmentRepository, AttachmentRepository>();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-builder.Services.AddScoped<ICompanyRepository, CompanyRepository>();
+builder.Services.AddScoped<ICustomerRepository, CustomerRepository>();
 builder.Services.AddScoped<IContactRepository, ContactRepository>();
 builder.Services.AddScoped<IDealRepository, DealRepository>();
 builder.Services.AddScoped<ICountryRepository, CountryRepository>();

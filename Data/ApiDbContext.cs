@@ -15,7 +15,7 @@ namespace XLead_Server.Data
         public DbSet<User> Users { get; set; }
         public DbSet<Privilege> Privileges { get; set; }
         public DbSet<UserPrivilege> UsersPrivileges { get; set; }
-        public DbSet<Company> Companies { get; set; }
+        public DbSet<Customer> Customers { get; set; }
         public DbSet<Contact> Contacts { get; set; }
         public DbSet<Deal> Deals { get; set; }
         public DbSet<Account> Accounts { get; set; }
@@ -74,26 +74,26 @@ protected override void OnModelCreating(ModelBuilder modelBuilder)
             });
 
             // Company Relationships
-            modelBuilder.Entity<Company>(entity =>
+            modelBuilder.Entity<Customer>(entity =>
             {
                 entity.HasMany(c => c.Contacts)
-                .WithOne(c => c.company)
-                .HasForeignKey(c => c.CompanyId)
+                .WithOne(c => c.customer)
+                .HasForeignKey(c => c.CustomerId)
                 .OnDelete(DeleteBehavior.Restrict);
 
                 entity.HasOne(c => c.Creator)
-                .WithMany(u => u.Companies)
+                .WithMany(u => u.Customers)
                 .HasForeignKey(c => c.CreatedBy)
                 .OnDelete(DeleteBehavior.Restrict);
 
                 entity.HasOne(c => c.Updater)
-                .WithMany(u => u.UpdatedCompanies)
+                .WithMany(u => u.UpdatedCustomers)
                 .HasForeignKey(c => c.UpdatedBy)
                 .OnDelete(DeleteBehavior.Restrict);
 
                 entity.Property(c => c.IndustryVerticalId);
                 entity.HasOne(c => c.IndustrialVertical)
-                .WithMany(iv => iv.Companies)
+                .WithMany(iv => iv.Customers)
                 .HasForeignKey(c => c.IndustryVerticalId)
                 .OnDelete(DeleteBehavior.Restrict);
             });
@@ -106,9 +106,9 @@ protected override void OnModelCreating(ModelBuilder modelBuilder)
                 .HasForeignKey(d => d.ContactId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-                entity.HasOne(c => c.company)
+                entity.HasOne(c => c.customer)
                 .WithMany(c => c.Contacts)
-                .HasForeignKey(c => c.CompanyId)
+                .HasForeignKey(c => c.CustomerId)
                 .OnDelete(DeleteBehavior.Restrict);
 
                 entity.HasOne(c => c.Creator)

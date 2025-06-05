@@ -9,6 +9,7 @@ using XLead_Server.Data;
 using XLead_Server.DTOs;
 using XLead_Server.Interfaces;
 using XLead_Server.Models;
+using Microsoft.Extensions.Logging;
 
 namespace XLead_Server.Repositories
 {
@@ -33,6 +34,7 @@ namespace XLead_Server.Repositories
             _customerRepository = customerRepository;
             _contactRepository = contactRepository;
             _mapper = mapper;
+            _logger = logger;
         }
 
         public async Task<DealReadDto?> AddDealAsync(DealCreateDto dto)

@@ -3,7 +3,7 @@ using System;
 using System.Threading.Tasks;
 using XLead_Server.DTOs;
 using XLead_Server.Interfaces;
-using System.Collections.Generic; // For IEnumerable
+using System.Collections.Generic; 
 
 namespace XLead_Server.Controllers
 {
@@ -38,12 +38,22 @@ namespace XLead_Server.Controllers
             return Ok(dealDto);
         }
 
-        [HttpGet]
+        [HttpGet] // Will respond to GET api/Deals and GET api/Deals?createdByUserId=5
         [ProducesResponseType(typeof(IEnumerable<DealReadDto>), 200)]
-        public async Task<ActionResult<IEnumerable<DealReadDto>>> GetAllDeals()
+        public async Task<ActionResult<IEnumerable<DealReadDto>>> GetAllDeals([FromQuery] long? createdByUserId)
         {
-            _logger.LogInformation("Fetching all deals");
-            var deals = await _dealRepository.GetAllDealsAsync();
+            if (createdByUserId.HasValue)
+            {
+                _logger.LogInformation("Fetching all deals for creator ID {CreatedByUserId}", createdByUserId.Value);
+                // Optional privilege check as in Option 1, using createdByUserId.Value
+            }
+            else
+            {
+                _logger.LogInformation("Fetching all deals (no creator filter)");
+            
+            }
+
+            var deals = await _dealRepository.GetAllDealsAsync(); 
             return Ok(deals);
         }
 
@@ -105,8 +115,8 @@ namespace XLead_Server.Controllers
         {
             _logger.LogInformation("Attempting to update stage for deal ID {DealId} with payload: {@DealUpdateDto}", id, dto);
 
-            // --- BEGIN VALIDATION & PRIVILEGE CHECK ---
-            if (dto.PerformedByUserId <= 0) // Basic validation for the user ID from DTO
+          
+            if (dto.PerformedByUserId <= 0) 
             {
                 _logger.LogWarning("PerformedByUserId is missing or invalid in DealUpdateDto.");
                 return BadRequest("User identifier (PerformedByUserId) is required to check privileges and record history.");
@@ -119,12 +129,11 @@ namespace XLead_Server.Controllers
                 return Forbid("User lacks the 'StageUpdate' privilege.");
             }
             _logger.LogInformation("User {UserId} has 'StageUpdate' privilege for deal ID {DealId}. Proceeding.", dto.PerformedByUserId, id);
-            // --- END PRIVILEGE CHECK ---
+         
 
             try
             {
-                // Attempt to update the deal's stage
-                // The _dealRepository.UpdateDealStageAsync should now also handle setting Deal.UpdatedBy
+               
                 var updatedDealDto = await _dealRepository.UpdateDealStageAsync(id, dto);
 
                 if (updatedDealDto == null)
@@ -135,39 +144,37 @@ namespace XLead_Server.Controllers
 
                 _logger.LogInformation("Deal ID {DealId} stage updated successfully to {StageName}.", id, dto.StageName);
 
-                // --- BEGIN STAGE HISTORY CREATION ---
+               
                 try
                 {
                     var stageHistoryCreateDto = new StageHistoryCreateDto
                     {
                         DealId = id,
-                        StageName = dto.StageName, // The new stage name
-                        CreatedBy = dto.PerformedByUserId // The user who performed the update
+                        StageName = dto.StageName, 
+                        CreatedBy = dto.PerformedByUserId 
                     };
 
                     var createdStageHistory = await _stageHistoryRepository.CreateStageHistoryAsync(stageHistoryCreateDto);
                     _logger.LogInformation("Stage history created for Deal ID {DealId}, New Stage: {StageName}, History ID: {HistoryId}",
                         id, dto.StageName, createdStageHistory.Id);
                 }
-                catch (Exception ex_history) // Catch exceptions specifically from history creation
+                catch (Exception ex_history)
                 {
-                    // Log the error but don't fail the primary operation (deal stage update was successful)
-                    // You might decide to roll back or handle this differently based on business rules.
+                
                     _logger.LogError(ex_history, "Failed to create stage history for Deal ID {DealId} after successful stage update. New Stage: {StageName}. Error: {ErrorMessage}",
                         id, dto.StageName, ex_history.Message);
-                    // Depending on requirements, you might still return Ok or a specific status indicating partial success.
-                    // For now, we'll proceed as the main operation succeeded.
+                   
                 }
-                // --- END STAGE HISTORY CREATION ---
+              
 
                 return Ok(updatedDealDto);
             }
-            catch (InvalidOperationException ex) // Catches specific errors like "Stage not found" from repository
+            catch (InvalidOperationException ex) 
             {
                 _logger.LogWarning(ex, "Invalid operation while updating stage for deal ID {DealId}: {ErrorMessage}", id, ex.Message);
-                return BadRequest(ex.Message); // e.g., "Stage 'XYZ' not found."
+                return BadRequest(ex.Message);
             }
-            catch (Exception ex) // Catch-all for other unexpected errors
+            catch (Exception ex) 
             {
                 _logger.LogError(ex, "Unexpected error while updating stage for deal ID {DealId}: {ErrorMessage}", id, ex.Message);
                 return Problem($"An unexpected error occurred while updating deal stage: {ex.Message}", statusCode: 500);
@@ -175,19 +182,13 @@ namespace XLead_Server.Controllers
         }
         [HttpGet("{id}/history")]
         [ProducesResponseType(typeof(IEnumerable<StageHistoryReadDto>), 200)]
-        [ProducesResponseType(404)] // If deal itself is not found or no history (could be empty 200)
+        [ProducesResponseType(404)] 
         [ProducesResponseType(500)]
         public async Task<ActionResult<IEnumerable<StageHistoryReadDto>>> GetDealStageHistory(long id)
         {
             _logger.LogInformation("Fetching stage history for deal ID {DealId}", id);
 
-            // Optional: Check if deal exists first, or let repository handle it.
-            // var dealExists = await _dealRepository.GetDealByIdAsync(id); // Or a lighter ExistsAsync check
-            // if (dealExists == null)
-            // {
-            //     _logger.LogWarning("Deal with ID {DealId} not found when trying to fetch history.", id);
-            //     return NotFound($"Deal with ID {id} not found.");
-            // }
+         
 
             try
             {
@@ -195,7 +196,7 @@ namespace XLead_Server.Controllers
                 if (history == null || !history.Any())
                 {
                     _logger.LogInformation("No stage history found for deal ID {DealId}", id);
-                    return Ok(Enumerable.Empty<StageHistoryReadDto>()); // Return empty list, not 404
+                    return Ok(Enumerable.Empty<StageHistoryReadDto>());
                 }
                 return Ok(history);
             }
@@ -206,6 +207,24 @@ namespace XLead_Server.Controllers
             }
         }
 
+        [HttpGet("byCreator/{userId}")]
+        [ProducesResponseType(typeof(IEnumerable<DealReadDto>), 200)]
+        [ProducesResponseType(404)] 
+        public async Task<ActionResult<IEnumerable<DealReadDto>>> GetDealsByCreator(long userId)
+        {
+            _logger.LogInformation("Fetching deals for creator ID {UserId}", userId);
 
+        
+          
+
+            var deals = await _dealRepository.GetDealsByCreatorIdAsync(userId);
+
+            if (deals == null || !deals.Any())
+            {
+                _logger.LogInformation("No deals found for creator ID {UserId}", userId);
+                return Ok(Enumerable.Empty<DealReadDto>());
+            }
+            return Ok(deals);
+        }
     }
 }

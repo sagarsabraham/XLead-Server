@@ -137,8 +137,9 @@ namespace XLead_Server.Repositories
             return _mapper.Map<DealReadDto>(deal);
         }
 
-        public async Task<IEnumerable<DealReadDto>> GetAllDealsAsync()
+        public async Task<IEnumerable<DealReadDto>> GetAllDealsAsync() // <--- NO CHANGE HERE
         {
+          
             return await _context.Deals
                 .AsNoTracking()
                 .Include(d => d.account)
@@ -149,10 +150,10 @@ namespace XLead_Server.Repositories
                 .Include(d => d.country)
                 .Include(d => d.contact)
                 .Include(d => d.dealStage)
+                .OrderByDescending(d => d.CreatedAt)
                 .Select(deal => _mapper.Map<DealReadDto>(deal))
                 .ToListAsync();
         }
-       
         public async Task<DealReadDto?> UpdateDealStageAsync(long id, DealUpdateDto dto) 
         {
             var deal = await _context.Deals
@@ -180,6 +181,25 @@ namespace XLead_Server.Repositories
 
           
             return await GetDealByIdAsync(deal.Id);
+        }
+        // In XLead_Server.Repositories.DealRepository.cs
+        public async Task<IEnumerable<DealReadDto>> GetDealsByCreatorIdAsync(long creatorId)
+        {
+            // Assuming you inject ILogger here too
+            return await _context.Deals
+                .Where(d => d.CreatedBy == creatorId) // Filter by the CreatedBy field
+                .AsNoTracking()
+                .Include(d => d.account)
+                .Include(d => d.region)
+                .Include(d => d.domain)
+                .Include(d => d.revenueType)
+                .Include(d => d.du)
+                .Include(d => d.country)
+                .Include(d => d.contact)
+                .Include(d => d.dealStage)
+                .OrderByDescending(d => d.CreatedAt) // Optional: order by creation date or other criteria
+                .Select(deal => _mapper.Map<DealReadDto>(deal))
+                .ToListAsync();
         }
     }
 }

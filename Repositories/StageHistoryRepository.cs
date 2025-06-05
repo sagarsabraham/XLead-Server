@@ -68,8 +68,8 @@ namespace XLead_Server.Repositories
         {
             var historyEntities = await _context.StageHistories
                 .Where(sh => sh.DealId == dealId)
-                .Include(sh => sh.DealStage) // To get StageName for the DTO
-                .OrderByDescending(sh => sh.CreatedAt) // Typically newest first
+                .Include(sh => sh.DealStage) 
+                .OrderByDescending(sh => sh.CreatedAt) 
                 .AsNoTracking()
                 .ToListAsync();
 

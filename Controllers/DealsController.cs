@@ -93,7 +93,7 @@ namespace XLead_Server.Controllers
             }
         }
 
-        [HttpGet("dashboard-metrics")] 
+        [HttpGet("dashboard-metrics")]
         [ProducesResponseType(typeof(DashboardMetricsDto), 200)]
         [ProducesResponseType(500)]
         public async Task<ActionResult<DashboardMetricsDto>> GetDashboardMetrics()
@@ -110,5 +110,54 @@ namespace XLead_Server.Controllers
                 return Problem("An unexpected error occurred while fetching dashboard metrics.", statusCode: 500);
             }
         }
+
+            [HttpGet("open-pipeline-stages")] // Route will be /api/Deals/open-pipeline-stages
+            [ProducesResponseType(typeof(IEnumerable<PipelineStageDataDto>), StatusCodes.Status200OK)]
+            [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError)]
+            public async Task<ActionResult<IEnumerable<PipelineStageDataDto>>> GetOpenPipelineStageData()
+            {
+                _logger.LogInformation("Fetching data for open pipeline stage graph.");
+                try
+                {
+                    var stageData = await _dealRepository.GetOpenPipelineAmountsByStageAsync();
+                    return Ok(stageData);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error fetching open pipeline stage data: {Message}", ex.Message);
+                    return Problem(
+                        detail: "An unexpected error occurred while fetching data for the pipeline stage graph.",
+                        statusCode: StatusCodes.Status500InternalServerError,
+                        title: "Server Error");
+                }
+            }
+
+        [HttpGet("monthly-revenue-won")] 
+        [ProducesResponseType(typeof(IEnumerable<MonthlyRevenueDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError)]
+        public async Task<ActionResult<IEnumerable<MonthlyRevenueDto>>> GetMonthlyRevenueData(
+        [FromQuery] int months = 12) 
+        {
+            _logger.LogInformation($"Fetching monthly revenue data for the last {months} months.");
+            if (months <= 0)
+            {
+                return BadRequest("Number of months must be a positive integer.");
+            }
+
+            try
+            {
+                var revenueData = await _dealRepository.GetMonthlyRevenueWonAsync(months);
+                return Ok(revenueData);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error fetching monthly revenue data: {Message}", ex.Message);
+                return Problem(
+                    detail: "An unexpected error occurred while fetching monthly revenue data.",
+                    statusCode: StatusCodes.Status500InternalServerError,
+                    title: "Server Error");
+            }
+        }
     }
-}
+    }
+

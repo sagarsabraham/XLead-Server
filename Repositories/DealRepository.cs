@@ -162,6 +162,33 @@ namespace XLead_Server.Repositories
         }
 
 
+        public async Task<IEnumerable<PipelineStageDataDto>> GetOpenPipelineAmountsByStageAsync()
+        {
+            _logger.LogInformation("Fetching open pipeline amounts by stage.");
+
+            // Ensure your Deal model has a navigation property to DealStage (e.g., public DealStage DealStage { get; set; })
+            // And DealStage has a name property (e.g., public string StageName { get; set; })
+            // And Deal has an amount property (e.g., public decimal DealAmount { get; set; } or Amount)
+
+            var openPipelineData = await _context.Deals
+                .Include(d => d.dealStage) // Include DealStage to access its name
+                .Where(d => d.dealStage.StageName != StageClosedWon && d.dealStage.StageName != StageClosedLost) // Filter out closed deals
+                .GroupBy(d => d.dealStage.StageName) // Group by stage name
+                .Select(g => new PipelineStageDataDto
+                {
+                    StageName = g.Key,         // The stage name
+                    TotalAmount = g.Sum(d => d.DealAmount) // Sum of DealAmount for that stage
+                                                           // Ensure DealAmount is the correct property name for deal's value in your Deal model
+                })
+                .OrderBy(s => s.StageName) // Optional: Order by stage name
+                .ToListAsync();
+
+            _logger.LogInformation($"Successfully fetched {openPipelineData.Count} stages with open pipeline amounts.");
+            return openPipelineData;
+        }
+
+
+
 
         public async Task<DashboardMetricsDto> GetDashboardMetricsAsync()
         {
@@ -267,5 +294,44 @@ namespace XLead_Server.Repositories
             }
             return Math.Round(((double)(currentValue - previousValue) / (double)previousValue) * 100.0, 2);
         }
+
+        public async Task<IEnumerable<MonthlyRevenueDto>> GetMonthlyRevenueWonAsync(int numberOfMonths)
+        {
+            _logger.LogInformation($"Fetching monthly revenue won for the last {numberOfMonths} months.");
+
+        
+            var startDate = DateTime.UtcNow.AddMonths(-(numberOfMonths - 1)); 
+            var firstDayOfStartDateMonth = new DateTime(startDate.Year, startDate.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+
+            var monthlyRevenueData = await _context.Deals
+                .Where(d => d.dealStage.StageName == StageClosedWon && // Only "Closed Won" deals
+                             d.ClosingDate >= firstDayOfStartDateMonth) // Within the specified date range
+                .GroupBy(d => new { d.ClosingDate.Year, d.ClosingDate.Month }) // Group by Year and Month of ClosingDate
+                .Select(g => new
+                {
+                    Year = g.Key.Year,
+                    Month = g.Key.Month,
+                    TotalRevenue = g.Sum(d => d.DealAmount) // Sum of DealAmount
+                                                            // Ensure DealAmount is the correct property name in your Deal model
+                })
+                .OrderBy(r => r.Year)
+                .ThenBy(r => r.Month)
+                .ToListAsync(); // Fetch data from DB
+
+           
+            var result = monthlyRevenueData.Select(r => new MonthlyRevenueDto
+            {
+                
+                MonthYear = new DateTime(r.Year, r.Month, 1).ToString("MMMM yyyy", CultureInfo.InvariantCulture),
+                TotalRevenue = r.TotalRevenue
+            }).ToList();
+
+           
+
+            _logger.LogInformation($"Successfully fetched {result.Count} months of revenue data.");
+            return result;
+        }
+
+
     }
 }

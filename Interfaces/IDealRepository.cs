@@ -12,5 +12,7 @@ namespace XLead_Server.Interfaces
         Task<IEnumerable<DealReadDto>> GetAllDealsAsync();
 
         Task<DashboardMetricsDto> GetDashboardMetricsAsync();
+        Task<IEnumerable<PipelineStageDataDto>> GetOpenPipelineAmountsByStageAsync();
+        Task<IEnumerable<MonthlyRevenueDto>> GetMonthlyRevenueWonAsync(int numberOfMonths);
     }
 }

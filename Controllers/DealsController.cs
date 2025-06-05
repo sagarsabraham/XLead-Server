@@ -80,5 +80,25 @@ namespace XLead_Server.Controllers
                 return Problem($"An unexpected error occurred: {ex.Message}", statusCode: 500);
             }
         }
+        [HttpPut("{id}/stage")]
+
+        public async Task<IActionResult> UpdateDealStage(long id, [FromBody] DealUpdateDto dto)
+
+        {
+
+            var updatedDeal = await _dealRepository.UpdateDealStageAsync(id, dto);
+
+            if (updatedDeal == null)
+
+            {
+
+                return NotFound($"Deal with ID {id} not found.");
+
+            }
+
+            return Ok(updatedDeal);
+
+        }
+
     }
 }

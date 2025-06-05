@@ -6,12 +6,11 @@ using XLead_Server.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAngularApp",
         policy => policy
-            .WithOrigins("http://localhost:4200") // <-- your Angular frontend URL
+            .WithOrigins("http://localhost:4200") 
             .AllowAnyMethod()
             .AllowAnyHeader()
             .AllowCredentials());
@@ -26,7 +25,7 @@ builder.Services.AddCors(options =>
     });
 });
 builder.Services.AddControllers();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbucklebuilder.Services.AddDbContext<ApiDbContext>(option =>
+
 builder.Services.AddDbContext<ApiDbContext>(option =>
     option.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 //builder.Services.AddScoped<IAttachmentRepository, AttachmentRepository>();

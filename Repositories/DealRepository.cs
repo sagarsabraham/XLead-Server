@@ -62,7 +62,7 @@ namespace XLead_Server.Repositories
                 }
             }
 
-            // 2. Find or Create Contact
+          
             string firstName;
             string? lastName = null;
             var nameParts = dto.ContactFullName.Trim().Split(new[] { ' ' }, 2, StringSplitOptions.RemoveEmptyEntries);
@@ -96,7 +96,7 @@ namespace XLead_Server.Repositories
             }
             else
             {
-                // Update existing contact with new details if provided
+               
                 contact.Email = dto.ContactEmail ?? contact.Email;
                 contact.PhoneNumber = dto.ContactPhoneNumber ?? contact.PhoneNumber;
                 contact.Designation = dto.ContactDesignation ?? contact.Designation;
@@ -109,7 +109,6 @@ namespace XLead_Server.Repositories
                 throw new InvalidOperationException($"Contact '{dto.ContactFullName}' for customer '{customer.CustomerName}' has an invalid ID after creation/retrieval.");
             }
 
-            // 3. Create Deal entity using AutoMapper
             var deal = _mapper.Map<Deal>(dto);
             deal.ContactId = contact.Id;
 
@@ -152,6 +151,37 @@ namespace XLead_Server.Repositories
                 .Include(d => d.dealStage)
                 .Select(deal => _mapper.Map<DealReadDto>(deal))
                 .ToListAsync();
+        }
+        public async Task<DealReadDto?> UpdateDealStageAsync(long id, DealUpdateDto dto)
+        {
+          
+            var deal = await _context.Deals
+                .FirstOrDefaultAsync(d => d.Id == id);
+
+            if (deal == null)
+            {
+                return null; 
+            }
+
+          
+            var stage = await _context.DealStages
+                .FirstOrDefaultAsync(s => s.StageName == dto.StageName);
+
+            if (stage == null)
+            {
+                throw new InvalidOperationException($"Stage '{dto.StageName}' not found.");
+            }
+
+          
+            deal.DealStageId = stage.Id;
+            deal.UpdatedAt = DateTime.UtcNow;
+
+           
+            await _context.SaveChangesAsync();
+
+           
+            return await GetDealByIdAsync(deal.Id);
+
         }
     }
 }

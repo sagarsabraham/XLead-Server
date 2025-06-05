@@ -71,4 +71,30 @@ VALUES
 ('Closed Lost', 'Closed Lost', 1, GETDATE(), 1, GETDATE(), 1);
 
 
+04/06/2025
+/----------------------------------------------------------------------------------------------------------/
+INSERT INTO Users (Name, Role, AssignedTo, CreatedBy, CreatedAt, UpdatedBy, UpdatedAt)
+VALUES 
+('Pratheesh Kumar', 'Admin', 1, 1, GETUTCDATE(), 1, GETUTCDATE()),
+('Subhash K Joseph', 'Accounts Manager', 1, 1, GETUTCDATE(), 1, GETUTCDATE()),
+('Sreelekshmi G', 'Accounts Manager', 1, 1, GETUTCDATE(), 1, GETUTCDATE()),
+('Sagar S Abraham', 'Salesperson', 2, 2, GETUTCDATE(), 2, GETUTCDATE()),
+('Abhiram M Prasad', 'Salesperson', 2, 2, GETUTCDATE(), 2, GETUTCDATE()),
+('Dhanya P', 'Salesperson', 2, 2, GETUTCDATE(), 2, GETUTCDATE()),
+('Bhagya Unnikrishnan', 'Salesperson', 3, 3, GETUTCDATE(), 3, GETUTCDATE()),
+('Harinand S', 'Salesperson', 3, 3, GETUTCDATE(), 3, GETUTCDATE()),
+('Meera M', 'Salesperson', 3, 3, GETUTCDATE(), 3, GETUTCDATE());
 
+
+INSERT INTO Privileges (PrivilegeName, CreatedBy, CreatedAt)
+VALUES
+('Overview', 1, GETUTCDATE()), 
+('PipelineDetailAccess', 1, GETUTCDATE()),
+( 'CreateCustomer', 2, GETUTCDATE()),
+( 'CreateContact', 2, GETUTCDATE());
+
+
+INSERT INTO UsersPrivileges (UserId, PrivilegeId, CreatedBy, CreatedAt)
+VALUES 
+(5, 3, 2, GETUTCDATE()),
+(5, 4, 2, GETUTCDATE());

@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using XLead_Server.Interfaces;
 using XLead_Server.Models;
 using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
+using Attachment = XLead_Server.Models.Attachment;
 
 namespace XLead_Server.Data
 {
@@ -26,6 +27,7 @@ namespace XLead_Server.Data
         public DbSet<Country> Countries { get; set; }
         public DbSet<DealStage> DealStages { get; set; }
         public DbSet<StageHistory> StageHistories { get; set; }
+        public DbSet<Attachment> Attachments { get; set; }
         public DbSet<IndustrialVertical> IndustrialVerticals { get; set; }
         public DbSet<ServiceLine> ServiceLines { get; set; }
 

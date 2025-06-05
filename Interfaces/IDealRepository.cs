@@ -10,10 +10,7 @@ namespace XLead_Server.Interfaces
         Task<DealReadDto?> AddDealAsync(DealCreateDto dealCreateDto);
         Task<DealReadDto?> GetDealByIdAsync(long id);
         Task<IEnumerable<DealReadDto>> GetAllDealsAsync();
-
-        Task<DashboardMetricsDto> GetDashboardMetricsAsync();
-        Task<IEnumerable<PipelineStageDataDto>> GetOpenPipelineAmountsByStageAsync();
-        Task<IEnumerable<MonthlyRevenueDto>> GetMonthlyRevenueWonAsync(int numberOfMonths);
-        Task<IEnumerable<TopCustomerDto>> GetTopCustomersByRevenueAsync(int count);
+        Task<DealReadDto> UpdateDealStageAsync(long id, DealUpdateDto dealUpdateDto);
+        Task<IEnumerable<DealReadDto>> GetDealsByCreatorIdAsync(long creatorId);
     }
 }

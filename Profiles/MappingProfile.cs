@@ -9,8 +9,9 @@ namespace XLead_Server.Profiles
         public MappingProfile()
         {
             CreateMap<Privilege, PrivilegeReadDto>();
+            CreateMap<StageHistory, StageHistoryReadDto>()
+        .ForMember(dest => dest.StageName, opt => opt.MapFrom(src => src.DealStage != null ? src.DealStage.StageName : "Unknown Stage"));
 
-           
 
             CreateMap<CustomerCreateDto, Customer>()
                  .ForMember(dest => dest.IsActive, opt => opt.MapFrom(src => true))
@@ -43,7 +44,7 @@ namespace XLead_Server.Profiles
                  .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => DateTime.UtcNow))
                  .ForMember(dest => dest.UpdatedAt, opt => opt.MapFrom(src => DateTime.UtcNow));
 
-            // Map Deal to DealReadDto
+      
             CreateMap<Deal, DealReadDto>()
                 .ForMember(dest => dest.DealName, opt => opt.MapFrom(src => src.DealName))
                 .ForMember(dest => dest.DealAmount, opt => opt.MapFrom(src => src.DealAmount))

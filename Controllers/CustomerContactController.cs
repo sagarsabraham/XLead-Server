@@ -32,8 +32,6 @@ namespace XLead_Server.Controllers
         [HttpPost("customer")]
         public async Task<IActionResult> AddCustomer([FromBody] CustomerCreateDto dto)
         {
-            // Assume userId is passed from frontend (hardcoded as 3)
-            // In a real system, validate userId via authentication (e.g., JWT)
             var privileges = await _userPrivilegeRepository.GetPrivilegesByUserIdAsync(dto.CreatedBy);
             if (!privileges.Any(p => p.PrivilegeName == "CreateCustomer"))
             {
@@ -52,7 +50,7 @@ namespace XLead_Server.Controllers
             }
         }
 
-        // From CustomerContactController.cs
+       
         [HttpPost("contact")]
         public async Task<IActionResult> AddContact([FromBody] ContactCreateDto dto)
         {

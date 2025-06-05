@@ -39,7 +39,7 @@ namespace XLead_Server.Repositories
 
         public async Task<DealReadDto?> AddDealAsync(DealCreateDto dto)
         {
-            // Validate required foreign keys exist
+         
             if (dto.RegionId.HasValue && !await _context.Regions.AnyAsync(r => r.Id == dto.RegionId.Value))
                 throw new InvalidOperationException($"Region with ID {dto.RegionId.Value} does not exist.");
             if (dto.DealStageId.HasValue && !await _context.DealStages.AnyAsync(ds => ds.Id == dto.DealStageId.Value))
@@ -51,7 +51,7 @@ namespace XLead_Server.Repositories
             if (dto.CountryId.HasValue && !await _context.Countries.AnyAsync(c => c.Id == dto.CountryId.Value))
                 throw new InvalidOperationException($"Country with ID {dto.CountryId.Value} does not exist.");
 
-            // 1. Find or Create Customer
+           
             Customer? customer = await _customerRepository.GetByNameAsync(dto.CustomerName);
             if (customer == null)
             {
@@ -69,7 +69,7 @@ namespace XLead_Server.Repositories
                 }
             }
 
-            // 2. Find or Create Contact
+          
             string firstName;
             string? lastName = null;
             var nameParts = dto.ContactFullName.Trim().Split(new[] { ' ' }, 2, StringSplitOptions.RemoveEmptyEntries);
@@ -103,7 +103,7 @@ namespace XLead_Server.Repositories
             }
             else
             {
-                // Update existing contact with new details if provided
+               
                 contact.Email = dto.ContactEmail ?? contact.Email;
                 contact.PhoneNumber = dto.ContactPhoneNumber ?? contact.PhoneNumber;
                 contact.Designation = dto.ContactDesignation ?? contact.Designation;
@@ -116,7 +116,6 @@ namespace XLead_Server.Repositories
                 throw new InvalidOperationException($"Contact '{dto.ContactFullName}' for customer '{customer.CustomerName}' has an invalid ID after creation/retrieval.");
             }
 
-            // 3. Create Deal entity using AutoMapper
             var deal = _mapper.Map<Deal>(dto);
             deal.ContactId = contact.Id;
 
@@ -145,8 +144,9 @@ namespace XLead_Server.Repositories
             return _mapper.Map<DealReadDto>(deal);
         }
 
-        public async Task<IEnumerable<DealReadDto>> GetAllDealsAsync()
+        public async Task<IEnumerable<DealReadDto>> GetAllDealsAsync() // <--- NO CHANGE HERE
         {
+          
             return await _context.Deals
                 .AsNoTracking()
                 .Include(d => d.account)
@@ -157,6 +157,54 @@ namespace XLead_Server.Repositories
                 .Include(d => d.country)
                 .Include(d => d.contact)
                 .Include(d => d.dealStage)
+                .OrderByDescending(d => d.CreatedAt)
+                .Select(deal => _mapper.Map<DealReadDto>(deal))
+                .ToListAsync();
+        }
+        public async Task<DealReadDto?> UpdateDealStageAsync(long id, DealUpdateDto dto) 
+        {
+            var deal = await _context.Deals
+                .FirstOrDefaultAsync(d => d.Id == id);
+
+            if (deal == null)
+            {
+                return null;
+            }
+
+            var stage = await _context.DealStages
+                .FirstOrDefaultAsync(s => s.StageName == dto.StageName);
+
+            if (stage == null)
+            {
+                
+                throw new InvalidOperationException($"Stage '{dto.StageName}' not found.");
+            }
+
+            deal.DealStageId = stage.Id;
+            deal.UpdatedAt = DateTime.UtcNow;
+            deal.UpdatedBy = dto.PerformedByUserId; 
+
+            await _context.SaveChangesAsync();
+
+          
+            return await GetDealByIdAsync(deal.Id);
+        }
+        // In XLead_Server.Repositories.DealRepository.cs
+        public async Task<IEnumerable<DealReadDto>> GetDealsByCreatorIdAsync(long creatorId)
+        {
+            // Assuming you inject ILogger here too
+            return await _context.Deals
+                .Where(d => d.CreatedBy == creatorId) // Filter by the CreatedBy field
+                .AsNoTracking()
+                .Include(d => d.account)
+                .Include(d => d.region)
+                .Include(d => d.domain)
+                .Include(d => d.revenueType)
+                .Include(d => d.du)
+                .Include(d => d.country)
+                .Include(d => d.contact)
+                .Include(d => d.dealStage)
+                .OrderByDescending(d => d.CreatedAt) // Optional: order by creation date or other criteria
                 .Select(deal => _mapper.Map<DealReadDto>(deal))
                 .ToListAsync();
         }

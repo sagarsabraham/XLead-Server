@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
 using AutoMapper;
@@ -8,6 +9,7 @@ using XLead_Server.Data;
 using XLead_Server.DTOs;
 using XLead_Server.Interfaces;
 using XLead_Server.Models;
+using Microsoft.Extensions.Logging;
 
 namespace XLead_Server.Repositories
 {
@@ -17,17 +19,22 @@ namespace XLead_Server.Repositories
         private readonly ICustomerRepository _customerRepository;
         private readonly IContactRepository _contactRepository;
         private readonly IMapper _mapper;
+        private readonly ILogger<DealRepository> _logger;
+        private const string StageClosedWon = "Closed Won";
+        private const string StageClosedLost = "Closed Lost";
 
         public DealRepository(
             ApiDbContext context,
             ICustomerRepository customerRepository,
             IContactRepository contactRepository,
-            IMapper mapper)
+            IMapper mapper,
+            ILogger<DealRepository> logger)
         {
             _context = context;
             _customerRepository = customerRepository;
             _contactRepository = contactRepository;
             _mapper = mapper;
+            _logger = logger;
         }
 
         public async Task<DealReadDto?> AddDealAsync(DealCreateDto dto)
@@ -153,5 +160,201 @@ namespace XLead_Server.Repositories
                 .Select(deal => _mapper.Map<DealReadDto>(deal))
                 .ToListAsync();
         }
+
+
+        public async Task<IEnumerable<PipelineStageDataDto>> GetOpenPipelineAmountsByStageAsync()
+        {
+            _logger.LogInformation("Fetching open pipeline amounts by stage.");
+
+         
+
+            var openPipelineData = await _context.Deals
+                .Include(d => d.dealStage) // Include DealStage to access its name
+                .Where(d => d.dealStage.StageName != StageClosedWon && d.dealStage.StageName != StageClosedLost) // Filter out closed deals
+                .GroupBy(d => d.dealStage.StageName) // Group by stage name
+                .Select(g => new PipelineStageDataDto
+                {
+                    StageName = g.Key,         // The stage name
+                    TotalAmount = g.Sum(d => d.DealAmount) // Sum of DealAmount for that stage
+                                                           // Ensure DealAmount is the correct property name for deal's value in your Deal model
+                })
+                .OrderBy(s => s.StageName) // Optional: Order by stage name
+                .ToListAsync();
+
+            _logger.LogInformation($"Successfully fetched {openPipelineData.Count} stages with open pipeline amounts.");
+            return openPipelineData;
+        }
+        public async Task<IEnumerable<TopCustomerDto>> GetTopCustomersByRevenueAsync(int count)
+        {
+            _logger.LogInformation($"Fetching top {count} customers by revenue won.");
+            var topCustomersData = await _context.Deals
+                           .Where(d => d.dealStage.StageName == StageClosedWon && d.contact != null && d.contact.customer != null)
+                           .Include(d => d.contact)       // Include the Contact related to the Deal
+                               .ThenInclude(c => c.customer) // Then include the Customer related to that Contact
+                           .GroupBy(d => new { d.contact.customer.Id, d.contact.customer.CustomerName }) // Group by Customer's Id and Name
+                           .Select(g => new TopCustomerDto
+                           {
+                               CustomerName = g.Key.CustomerName,    // Using CustomerName for the DTO's AccountName field
+                               TotalRevenueWon = g.Sum(d => d.DealAmount) // Ensure DealAmount is the correct property for deal's value
+                           })
+                           .OrderByDescending(c => c.TotalRevenueWon)
+                           .Take(count)
+                           .ToListAsync();
+
+            _logger.LogInformation($"Successfully fetched top customers data (via Contact). Count: {topCustomersData.Count}");
+            return topCustomersData;
+        }
+
+
+
+
+        public async Task<DashboardMetricsDto> GetDashboardMetricsAsync()
+        {
+            var metrics = new DashboardMetricsDto();
+            var now = DateTime.UtcNow;
+
+            var currentMonthStart = new DateTime(now.Year, now.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+            var currentMonthEnd = currentMonthStart.AddMonths(1);
+            var previousMonthStart = currentMonthStart.AddMonths(-1);
+            var previousMonthEnd = currentMonthStart;
+
+           
+            var dealProjections = await _context.Deals
+                .Where(d => (d.CreatedAt >= previousMonthStart && d.CreatedAt < currentMonthEnd) || 
+                             (d.ClosingDate >= previousMonthStart && d.ClosingDate < currentMonthEnd))
+                .Select(d => new
+                {
+                    d.Id,
+                    d.CreatedAt,      
+                    d.ClosingDate,    
+                    d.DealAmount,         
+                    DealStageName = d.dealStage != null ? d.dealStage.StageName : null 
+                })
+                .ToListAsync();
+
+            _logger.LogInformation($"Fetched {dealProjections.Count} deal projections for dashboard metrics (CreatedAt for Open, ClosingDate for Closed).");
+
+         
+
+            // 1. Open Pipelines - This Month:
+          
+            var currentMonthOpenDealsCount = dealProjections
+                .Count(d => d.CreatedAt >= currentMonthStart && d.CreatedAt < currentMonthEnd &&
+                             d.DealStageName != StageClosedWon && d.DealStageName != StageClosedLost);
+
+        
+            var previousMonthOpenDealsCount = dealProjections
+                .Count(d => d.CreatedAt >= previousMonthStart && d.CreatedAt < previousMonthEnd &&
+                             d.DealStageName != StageClosedWon && d.DealStageName != StageClosedLost);
+
+            metrics.OpenPipelines.Value = currentMonthOpenDealsCount.ToString();
+            metrics.OpenPipelines.PercentageChange = CalculatePercentageChange((double)currentMonthOpenDealsCount, (double)previousMonthOpenDealsCount);
+            metrics.OpenPipelines.IsPositiveTrend = currentMonthOpenDealsCount >= previousMonthOpenDealsCount;
+
+            // 2. Pipelines Won - This Month (ClosingDate in current month AND stage is Closed Won)
+            var currentMonthWonDealsCount = dealProjections
+                .Count(d => d.ClosingDate >= currentMonthStart && d.ClosingDate < currentMonthEnd &&
+                             d.DealStageName == StageClosedWon);
+            var previousMonthWonDealsCount = dealProjections
+                .Count(d => d.ClosingDate >= previousMonthStart && d.ClosingDate < previousMonthEnd &&
+                             d.DealStageName == StageClosedWon);
+
+            metrics.PipelinesWon.Value = currentMonthWonDealsCount.ToString();
+            metrics.PipelinesWon.PercentageChange = CalculatePercentageChange((double)currentMonthWonDealsCount, (double)previousMonthWonDealsCount);
+            metrics.PipelinesWon.IsPositiveTrend = currentMonthWonDealsCount >= previousMonthWonDealsCount;
+
+            // 3. Pipelines Lost - This Month (ClosingDate in current month AND stage is Closed Lost)
+            var currentMonthLostDealsCount = dealProjections
+                .Count(d => d.ClosingDate >= currentMonthStart && d.ClosingDate < currentMonthEnd &&
+                             d.DealStageName == StageClosedLost);
+            var previousMonthLostDealsCount = dealProjections
+                .Count(d => d.ClosingDate >= previousMonthStart && d.ClosingDate < previousMonthEnd &&
+                             d.DealStageName == StageClosedLost);
+
+            metrics.PipelinesLost.Value = currentMonthLostDealsCount.ToString();
+            metrics.PipelinesLost.PercentageChange = CalculatePercentageChange((double)currentMonthLostDealsCount, (double)previousMonthLostDealsCount);
+            metrics.PipelinesLost.IsPositiveTrend = currentMonthLostDealsCount <= previousMonthLostDealsCount;
+
+            // 4. Revenue Won - This Month (Sum Amount for deals ClosingDate in current month AND stage is Closed Won)
+            var currentMonthRevenueWonSum = dealProjections
+                .Where(d => d.ClosingDate >= currentMonthStart && d.ClosingDate < currentMonthEnd &&
+                             d.DealStageName == StageClosedWon)
+                .Sum(d => d.DealAmount);
+            var previousMonthRevenueWonSum = dealProjections
+                .Where(d => d.ClosingDate >= previousMonthStart && d.ClosingDate < previousMonthEnd &&
+                             d.DealStageName == StageClosedWon)
+                .Sum(d => d.DealAmount);
+
+            metrics.RevenueWon.Value = currentMonthRevenueWonSum.ToString("C", CultureInfo.GetCultureInfo("en-US"));
+            metrics.RevenueWon.PercentageChange = CalculatePercentageChange(currentMonthRevenueWonSum, previousMonthRevenueWonSum);
+            metrics.RevenueWon.IsPositiveTrend = currentMonthRevenueWonSum >= previousMonthRevenueWonSum;
+
+            _logger.LogInformation("Calculated dashboard metrics: {@Metrics}", metrics);
+            return metrics;
+        }
+
+        private double CalculatePercentageChange(double currentValue, double previousValue)
+        {
+            if (previousValue == 0)
+            {
+                if (currentValue == 0) return 0.0;
+                return currentValue > 0 ? 100.0 : -100.0;
+            }
+            return Math.Round(((currentValue - previousValue) / previousValue) * 100.0, 2);
+        }
+
+        private double CalculatePercentageChange(decimal currentValue, decimal previousValue)
+        {
+            if (previousValue == 0m)
+            {
+                if (currentValue == 0m) return 0.0;
+                return currentValue > 0m ? 100.0 : -100.0;
+            }
+            return Math.Round(((double)(currentValue - previousValue) / (double)previousValue) * 100.0, 2);
+        }
+
+        public async Task<IEnumerable<MonthlyRevenueDto>> GetMonthlyRevenueWonAsync(int numberOfMonths)
+        {
+            _logger.LogInformation($"Fetching monthly revenue won for the last {numberOfMonths} months.");
+
+        
+            var startDate = DateTime.UtcNow.AddMonths(-(numberOfMonths - 1)); 
+            var firstDayOfStartDateMonth = new DateTime(startDate.Year, startDate.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+
+            var monthlyRevenueData = await _context.Deals
+                .Where(d => d.dealStage.StageName == StageClosedWon && // Only "Closed Won" deals
+                             d.ClosingDate >= firstDayOfStartDateMonth) // Within the specified date range
+                .GroupBy(d => new { d.ClosingDate.Year, d.ClosingDate.Month }) // Group by Year and Month of ClosingDate
+                .Select(g => new
+                {
+                    Year = g.Key.Year,
+                    Month = g.Key.Month,
+                    TotalRevenue = g.Sum(d => d.DealAmount) // Sum of DealAmount
+                                                            // Ensure DealAmount is the correct property name in your Deal model
+                })
+                .OrderBy(r => r.Year)
+                .ThenBy(r => r.Month)
+                .ToListAsync(); // Fetch data from DB
+
+           
+            var result = monthlyRevenueData.Select(r => new MonthlyRevenueDto
+            {
+                
+                MonthYear = new DateTime(r.Year, r.Month, 1).ToString("MMMM yyyy", CultureInfo.InvariantCulture),
+                TotalRevenue = r.TotalRevenue
+            }).ToList();
+
+           
+
+            _logger.LogInformation($"Successfully fetched {result.Count} months of revenue data.");
+            return result;
+        }
+
+
+
+
+
+
+
     }
 }

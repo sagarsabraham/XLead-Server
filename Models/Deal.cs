@@ -36,5 +36,6 @@
 
         public ICollection<StageHistory> DealStageHistory { get; set; } = new List<StageHistory>();
         public ICollection<Attachment> Attachments { get; set; } = new List<Attachment>();
+        public ICollection<Note> Notes { get; set; }
     }
 }

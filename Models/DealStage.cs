@@ -10,7 +10,6 @@
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public long? UpdatedBy { get; set; }
         public DateTime? UpdatedAt { get; set; }
-        public User Creator { get; set; }
         public ICollection<Deal> Deals { get; set; }
         public ICollection<StageHistory> DealStageHistories { get; set; }
     }

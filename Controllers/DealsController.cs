@@ -1,9 +1,12 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using XLead_Server.DTOs;
 using XLead_Server.Interfaces;
-using System.Collections.Generic; // For IEnumerable
 
 namespace XLead_Server.Controllers
 {
@@ -21,9 +24,9 @@ namespace XLead_Server.Controllers
         }
 
         [HttpGet("{id}")]
-        [ProducesResponseType(typeof(DealReadDto), 200)]
-        [ProducesResponseType(404)]
-        public async Task<ActionResult<DealReadDto>> GetDealById(long id)
+        [ProducesResponseType(typeof(DealReadDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<ActionResult<DealReadDto>> GetDealByIdAsync(long id)
         {
             _logger.LogInformation($"Fetching deal with ID {id}");
             var dealDto = await _dealRepository.GetDealByIdAsync(id);
@@ -36,8 +39,8 @@ namespace XLead_Server.Controllers
         }
 
         [HttpGet]
-        [ProducesResponseType(typeof(IEnumerable<DealReadDto>), 200)]
-        public async Task<ActionResult<IEnumerable<DealReadDto>>> GetAllDeals()
+        [ProducesResponseType(typeof(IEnumerable<DealReadDto>), StatusCodes.Status200OK)]
+        public async Task<ActionResult<IEnumerable<DealReadDto>>> GetAllDealsAsync()
         {
             _logger.LogInformation("Fetching all deals");
             var deals = await _dealRepository.GetAllDealsAsync();
@@ -45,12 +48,12 @@ namespace XLead_Server.Controllers
         }
 
         [HttpPost]
-        [ProducesResponseType(typeof(DealReadDto), 201)]
-        [ProducesResponseType(400)]
-        [ProducesResponseType(500)]
-        public async Task<ActionResult<DealReadDto>> CreateDeal([FromBody] DealCreateDto dto)
+        [ProducesResponseType(typeof(DealReadDto), StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError)]
+        public async Task<ActionResult<DealReadDto>> CreateDealAsync([FromBody] DealCreateDto dealCreateDto)
         {
-            _logger.LogInformation("Attempting to create a new deal with payload: {@DealCreateDto}", dto);
+            _logger.LogInformation("Attempting to create a new deal with payload: {@DealCreateDto}", dealCreateDto);
 
             if (!ModelState.IsValid)
             {
@@ -60,25 +63,131 @@ namespace XLead_Server.Controllers
 
             try
             {
-                var createdDealDto = await _dealRepository.AddDealAsync(dto);
+                var createdDealDto = await _dealRepository.AddDealAsync(dealCreateDto);
                 if (createdDealDto == null)
                 {
-                    _logger.LogError("Failed to create deal for an unknown reason.");
-                    return Problem("Failed to create deal for an unknown reason.", statusCode: 500);
+                    _logger.LogError("Failed to create deal, repository returned null unexpectedly.");
+                    return Problem(
+                        detail: "Failed to create deal. The operation did not result in a new deal record.",
+                        statusCode: StatusCodes.Status500InternalServerError,
+                        title: "Creation Failed");
                 }
                 _logger.LogInformation($"Deal created successfully with ID {createdDealDto.Id}");
-                return CreatedAtAction(nameof(GetDealById), new { id = createdDealDto.Id }, createdDealDto);
+                return CreatedAtAction(nameof(GetDealByIdAsync), new { id = createdDealDto.Id }, createdDealDto);
             }
             catch (InvalidOperationException ex)
             {
                 _logger.LogError(ex, "Invalid operation while creating deal: {Message}", ex.Message);
-                return Problem(ex.Message, statusCode: 400);
+                return Problem(
+                    detail: ex.Message,
+                    statusCode: StatusCodes.Status400BadRequest,
+                    title: "Invalid Operation");
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Unexpected error while creating deal: {Message}", ex.Message);
-                return Problem($"An unexpected error occurred: {ex.Message}", statusCode: 500);
+                return Problem(
+                    detail: "An unexpected error occurred while creating the deal. Please try again later.",
+                    statusCode: StatusCodes.Status500InternalServerError,
+                    title: "Server Error");
+            }
+        }
+
+        [HttpGet("dashboard-metrics")]
+        [ProducesResponseType(typeof(DashboardMetricsDto), 200)]
+        [ProducesResponseType(500)]
+        public async Task<ActionResult<DashboardMetricsDto>> GetDashboardMetrics()
+        {
+            _logger.LogInformation("Fetching dashboard metrics");
+            try
+            {
+                var metrics = await _dealRepository.GetDashboardMetricsAsync();
+                return Ok(metrics);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error fetching dashboard metrics: {Message}", ex.Message);
+                return Problem("An unexpected error occurred while fetching dashboard metrics.", statusCode: 500);
+            }
+        }
+
+            [HttpGet("open-pipeline-stages")] // Route will be /api/Deals/open-pipeline-stages
+            [ProducesResponseType(typeof(IEnumerable<PipelineStageDataDto>), StatusCodes.Status200OK)]
+            [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError)]
+            public async Task<ActionResult<IEnumerable<PipelineStageDataDto>>> GetOpenPipelineStageData()
+            {
+                _logger.LogInformation("Fetching data for open pipeline stage graph.");
+                try
+                {
+                    var stageData = await _dealRepository.GetOpenPipelineAmountsByStageAsync();
+                    return Ok(stageData);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error fetching open pipeline stage data: {Message}", ex.Message);
+                    return Problem(
+                        detail: "An unexpected error occurred while fetching data for the pipeline stage graph.",
+                        statusCode: StatusCodes.Status500InternalServerError,
+                        title: "Server Error");
+                }
+            }
+
+        [HttpGet("monthly-revenue-won")] 
+        [ProducesResponseType(typeof(IEnumerable<MonthlyRevenueDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError)]
+        public async Task<ActionResult<IEnumerable<MonthlyRevenueDto>>> GetMonthlyRevenueData(
+        [FromQuery] int months = 12) 
+        {
+            _logger.LogInformation($"Fetching monthly revenue data for the last {months} months.");
+            if (months <= 0)
+            {
+                return BadRequest("Number of months must be a positive integer.");
+            }
+
+            try
+            {
+                var revenueData = await _dealRepository.GetMonthlyRevenueWonAsync(months);
+                return Ok(revenueData);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error fetching monthly revenue data: {Message}", ex.Message);
+                return Problem(
+                    detail: "An unexpected error occurred while fetching monthly revenue data.",
+                    statusCode: StatusCodes.Status500InternalServerError,
+                    title: "Server Error");
+            }
+        }
+        [HttpGet("top-customers-by-revenue")] // Route: /api/Deals/top-customers-by-revenue
+        [ProducesResponseType(typeof(IEnumerable<TopCustomerDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError)]
+        public async Task<ActionResult<IEnumerable<TopCustomerDto>>> GetTopCustomersData(
+           [FromQuery] int count = 5) // Default to top 5, configurable via query param
+        {
+            _logger.LogInformation($"Fetching top {count} customers by revenue.");
+            if (count <= 0)
+            {
+                return BadRequest("Count must be a positive integer.");
+            }
+            if (count > 50) // Optional: limit max count to prevent overly large queries
+            {
+                return BadRequest("Count cannot exceed 50.");
+            }
+
+            try
+            {
+                var topCustomers = await _dealRepository.GetTopCustomersByRevenueAsync(count);
+                return Ok(topCustomers);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error fetching top customers by revenue: {Message}", ex.Message);
+                return Problem(
+                    detail: "An unexpected error occurred while fetching top customers data.",
+                    statusCode: StatusCodes.Status500InternalServerError,
+                    title: "Server Error");
             }
         }
     }
-}
+    }
+

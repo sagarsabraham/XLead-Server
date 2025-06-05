@@ -1,6 +1,10 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 using XLead_Server.Interfaces;
+using XLead_Server.Models;
 
 namespace XLead_Server.Controllers
 {
@@ -8,18 +12,22 @@ namespace XLead_Server.Controllers
     [ApiController]
     public class DomainController : ControllerBase
     {
-        private IDomainRepository _domainRepository;
+        private readonly IDomainRepository _domainRepository;
+
         public DomainController(IDomainRepository domainRepository)
         {
             _domainRepository = domainRepository;
         }
+
         [HttpGet]
-        public async Task<IActionResult> Get()
+        [ProducesResponseType(typeof(IEnumerable<Domain>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<ActionResult<IEnumerable<Domain>>> GetAllDomainsAsync()
         {
             var domains = await _domainRepository.GetAllDomains();
             if (domains == null)
             {
-                return NotFound();
+                return NotFound("Domain data is currently unavailable or no domains found.");
             }
             return Ok(domains);
         }

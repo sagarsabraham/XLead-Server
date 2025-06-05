@@ -32,7 +32,7 @@ namespace XLead_Server.Repositories
 
         public async Task<DealReadDto?> AddDealAsync(DealCreateDto dto)
         {
-            // Validate required foreign keys exist
+         
             if (dto.RegionId.HasValue && !await _context.Regions.AnyAsync(r => r.Id == dto.RegionId.Value))
                 throw new InvalidOperationException($"Region with ID {dto.RegionId.Value} does not exist.");
             if (dto.DealStageId.HasValue && !await _context.DealStages.AnyAsync(ds => ds.Id == dto.DealStageId.Value))
@@ -44,7 +44,7 @@ namespace XLead_Server.Repositories
             if (dto.CountryId.HasValue && !await _context.Countries.AnyAsync(c => c.Id == dto.CountryId.Value))
                 throw new InvalidOperationException($"Country with ID {dto.CountryId.Value} does not exist.");
 
-            // 1. Find or Create Customer
+           
             Customer? customer = await _customerRepository.GetByNameAsync(dto.CustomerName);
             if (customer == null)
             {
@@ -152,36 +152,34 @@ namespace XLead_Server.Repositories
                 .Select(deal => _mapper.Map<DealReadDto>(deal))
                 .ToListAsync();
         }
-        public async Task<DealReadDto?> UpdateDealStageAsync(long id, DealUpdateDto dto)
+       
+        public async Task<DealReadDto?> UpdateDealStageAsync(long id, DealUpdateDto dto) 
         {
-          
             var deal = await _context.Deals
                 .FirstOrDefaultAsync(d => d.Id == id);
 
             if (deal == null)
             {
-                return null; 
+                return null;
             }
 
-          
             var stage = await _context.DealStages
                 .FirstOrDefaultAsync(s => s.StageName == dto.StageName);
 
             if (stage == null)
             {
+                
                 throw new InvalidOperationException($"Stage '{dto.StageName}' not found.");
             }
 
-          
             deal.DealStageId = stage.Id;
             deal.UpdatedAt = DateTime.UtcNow;
+            deal.UpdatedBy = dto.PerformedByUserId; 
 
-           
             await _context.SaveChangesAsync();
 
-           
+          
             return await GetDealByIdAsync(deal.Id);
-
         }
     }
 }

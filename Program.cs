@@ -32,7 +32,7 @@ builder.Services.AddDbContext<ApiDbContext>(option =>
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddScoped<IUserPrivilegeRepository, UserPrivilegeRepository>();
-
+builder.Services.AddScoped<IStageHistoryRepository, StageHistoryRepository>();
 builder.Services.AddScoped<ICustomerRepository, CustomerRepository>();
 builder.Services.AddScoped<IContactRepository, ContactRepository>();
 builder.Services.AddScoped<IDealRepository, DealRepository>();
@@ -51,13 +51,13 @@ builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
-// Use CORS
+
 app.UseCors("AllowAll");
 app.UseCors("AllowAngularApp");
 app.UseHttpsRedirection();

@@ -9,8 +9,9 @@ namespace XLead_Server.Profiles
         public MappingProfile()
         {
             CreateMap<Privilege, PrivilegeReadDto>();
+            CreateMap<StageHistory, StageHistoryReadDto>()
+        .ForMember(dest => dest.StageName, opt => opt.MapFrom(src => src.DealStage != null ? src.DealStage.StageName : "Unknown Stage"));
 
-           
 
             CreateMap<CustomerCreateDto, Customer>()
                  .ForMember(dest => dest.IsActive, opt => opt.MapFrom(src => true))

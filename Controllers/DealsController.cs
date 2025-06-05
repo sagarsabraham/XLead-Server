@@ -158,6 +158,36 @@ namespace XLead_Server.Controllers
                     title: "Server Error");
             }
         }
+        [HttpGet("top-customers-by-revenue")] // Route: /api/Deals/top-customers-by-revenue
+        [ProducesResponseType(typeof(IEnumerable<TopCustomerDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError)]
+        public async Task<ActionResult<IEnumerable<TopCustomerDto>>> GetTopCustomersData(
+           [FromQuery] int count = 5) // Default to top 5, configurable via query param
+        {
+            _logger.LogInformation($"Fetching top {count} customers by revenue.");
+            if (count <= 0)
+            {
+                return BadRequest("Count must be a positive integer.");
+            }
+            if (count > 50) // Optional: limit max count to prevent overly large queries
+            {
+                return BadRequest("Count cannot exceed 50.");
+            }
+
+            try
+            {
+                var topCustomers = await _dealRepository.GetTopCustomersByRevenueAsync(count);
+                return Ok(topCustomers);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error fetching top customers by revenue: {Message}", ex.Message);
+                return Problem(
+                    detail: "An unexpected error occurred while fetching top customers data.",
+                    statusCode: StatusCodes.Status500InternalServerError,
+                    title: "Server Error");
+            }
+        }
     }
     }
 

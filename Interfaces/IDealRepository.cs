@@ -14,5 +14,6 @@ namespace XLead_Server.Interfaces
         Task<DashboardMetricsDto> GetDashboardMetricsAsync();
         Task<IEnumerable<PipelineStageDataDto>> GetOpenPipelineAmountsByStageAsync();
         Task<IEnumerable<MonthlyRevenueDto>> GetMonthlyRevenueWonAsync(int numberOfMonths);
+        Task<IEnumerable<TopCustomerDto>> GetTopCustomersByRevenueAsync(int count);
     }
 }

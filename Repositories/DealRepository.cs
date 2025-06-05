@@ -166,9 +166,7 @@ namespace XLead_Server.Repositories
         {
             _logger.LogInformation("Fetching open pipeline amounts by stage.");
 
-            // Ensure your Deal model has a navigation property to DealStage (e.g., public DealStage DealStage { get; set; })
-            // And DealStage has a name property (e.g., public string StageName { get; set; })
-            // And Deal has an amount property (e.g., public decimal DealAmount { get; set; } or Amount)
+         
 
             var openPipelineData = await _context.Deals
                 .Include(d => d.dealStage) // Include DealStage to access its name
@@ -185,6 +183,26 @@ namespace XLead_Server.Repositories
 
             _logger.LogInformation($"Successfully fetched {openPipelineData.Count} stages with open pipeline amounts.");
             return openPipelineData;
+        }
+        public async Task<IEnumerable<TopCustomerDto>> GetTopCustomersByRevenueAsync(int count)
+        {
+            _logger.LogInformation($"Fetching top {count} customers by revenue won.");
+            var topCustomersData = await _context.Deals
+                           .Where(d => d.dealStage.StageName == StageClosedWon && d.contact != null && d.contact.customer != null)
+                           .Include(d => d.contact)       // Include the Contact related to the Deal
+                               .ThenInclude(c => c.customer) // Then include the Customer related to that Contact
+                           .GroupBy(d => new { d.contact.customer.Id, d.contact.customer.CustomerName }) // Group by Customer's Id and Name
+                           .Select(g => new TopCustomerDto
+                           {
+                               CustomerName = g.Key.CustomerName,    // Using CustomerName for the DTO's AccountName field
+                               TotalRevenueWon = g.Sum(d => d.DealAmount) // Ensure DealAmount is the correct property for deal's value
+                           })
+                           .OrderByDescending(c => c.TotalRevenueWon)
+                           .Take(count)
+                           .ToListAsync();
+
+            _logger.LogInformation($"Successfully fetched top customers data (via Contact). Count: {topCustomersData.Count}");
+            return topCustomersData;
         }
 
 
@@ -331,6 +349,11 @@ namespace XLead_Server.Repositories
             _logger.LogInformation($"Successfully fetched {result.Count} months of revenue data.");
             return result;
         }
+
+
+
+
+
 
 
     }

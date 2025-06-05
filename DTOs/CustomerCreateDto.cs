@@ -14,7 +14,8 @@ namespace XLead_Server.DTOs
 
         [StringLength(50)]
         public string? CustomerPhoneNumber { get; set; }
-        public string? IndustryVertical { get; set; }
+
+        public long? IndustryVerticalId { get; set; }
 
         [Required]
         public long CreatedBy { get; set; }

@@ -45,14 +45,14 @@ namespace XLead_Server.Models
         public long Id { get; set; }
         public string DealName { get; set; }
         public decimal DealAmount { get; set; }
-        public long AccountId { get; set; }
+        public long? AccountId { get; set; }  // Make nullable
         public long RegionId { get; set; }
-        public long DomainId { get; set; }
+        public long? DomainId { get; set; }  // Make nullable
         public long DealStageId { get; set; }
         public long RevenueTypeId { get; set; }
         public long DuId { get; set; }
         public long CountryId { get; set; }
-        public long ServiceLineId { get; set; }
+        public long? ServiceLineId { get; set; }  // Make nullable
         public string Description { get; set; }
         public decimal Probability { get; set; }
         public long ContactId { get; set; }
@@ -63,6 +63,7 @@ namespace XLead_Server.Models
         public long? UpdatedBy { get; set; }
         public DateTime? UpdatedAt { get; set; }
 
+        // Navigation properties
         public User Creator { get; set; }
         public Account account { get; set; }
         public Region region { get; set; }

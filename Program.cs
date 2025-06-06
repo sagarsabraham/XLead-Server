@@ -49,6 +49,7 @@ builder.Services.AddScoped<IRegionRepository, RegionRepository>();
 builder.Services.AddAutoMapper(typeof(Program)); // Scans current assembly for profiles
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 
+builder.Services.AddLogging();
 
 var app = builder.Build();
 

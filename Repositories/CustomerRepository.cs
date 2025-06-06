@@ -1,4 +1,5 @@
-﻿using AutoMapper;
+﻿// XLead_Server/Repositories/CustomerRepository.cs
+using AutoMapper;
 using Microsoft.EntityFrameworkCore;
 using XLead_Server.Data;
 using XLead_Server.DTOs;
@@ -7,7 +8,7 @@ using XLead_Server.Models;
 
 namespace XLead_Server.Repositories
 {
-    public class CustomerRepository :ICustomerRepository
+    public class CustomerRepository : ICustomerRepository
     {
         private readonly ApiDbContext _context;
         private readonly IMapper _mapper;
@@ -17,6 +18,7 @@ namespace XLead_Server.Repositories
             _context = context;
             _mapper = mapper;
         }
+
         public async Task<IEnumerable<CustomerReadDto>> GetAllCustomersAsync()
         {
             var customers = await _context.Customers.ToListAsync();
@@ -25,6 +27,17 @@ namespace XLead_Server.Repositories
 
         public async Task<Customer> AddCustomerAsync(CustomerCreateDto dto)
         {
+            // Validate IndustryVerticalId if provided
+            if (dto.IndustryVerticalId.HasValue)
+            {
+                var verticalExists = await _context.IndustrialVerticals
+                    .AnyAsync(iv => iv.Id == dto.IndustryVerticalId.Value);
+                if (!verticalExists)
+                {
+                    throw new ArgumentException("Invalid IndustryVerticalId");
+                }
+            }
+
             var customer = _mapper.Map<Customer>(dto);
             customer.IsActive = true;
             customer.CreatedBy = dto.CreatedBy;
@@ -35,16 +48,12 @@ namespace XLead_Server.Repositories
             await _context.SaveChangesAsync();
             return customer;
         }
-     
 
         public async Task<Customer?> GetByNameAsync(string customerName)
         {
             return await _context.Customers
                 .FirstOrDefaultAsync(c => c.CustomerName == customerName);
         }
-
-
-
 
         public async Task<Dictionary<string, List<string>>> GetCustomerContactMapAsync()
         {
@@ -57,7 +66,5 @@ namespace XLead_Server.Repositories
                 c => c.Contacts.Select(ct => $"{ct.FirstName} {ct.LastName}".Trim()).ToList()
             );
         }
-    
-
-}
+    }
 }

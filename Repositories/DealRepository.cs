@@ -23,18 +23,21 @@ namespace XLead_Server.Repositories
         private readonly ILogger<DealsController> _logger;
         private const string StageClosedWon = "Closed Won";
         private const string StageClosedLost = "Closed Lost";
+        private readonly IUserPrivilegeRepository _userPrivilegeRepository;
         public DealRepository(
             ApiDbContext context,
             ICustomerRepository customerRepository,
             IContactRepository contactRepository,
-            IMapper mapper,
+            IMapper mapper, IUserPrivilegeRepository userPrivilegeRepository,
             ILogger<DealsController> logger)
         {
             _context = context;
             _customerRepository = customerRepository;
             _contactRepository = contactRepository;
+            _userPrivilegeRepository = userPrivilegeRepository;
             _mapper = mapper;
             _logger = logger;
+
         }
 
         public async Task<DealReadDto?> AddDealAsync(DealCreateDto dto)
@@ -246,8 +249,7 @@ namespace XLead_Server.Repositories
 
             _logger.LogInformation("Repository: Found {DealCount} deals for salespersons under manager {ManagerUserId}", deals.Count, managerUserId);
 
-            
-            // Using manual projection for clarity, especially for SalespersonName
+          
             var overviewDeals = deals.Select(deal => new DealManagerOverviewDto
             {
                 Id = deal.Id,
@@ -273,7 +275,6 @@ namespace XLead_Server.Repositories
         {
             _logger.LogInformation("Repository: Fetching stage counts for manager ID {ManagerUserId}", managerUserId);
 
-            // Step 1: Find all User IDs that are assigned to the managerUserId
             var salespersonIds = await _context.Users
                 .Where(u => u.AssignedTo == managerUserId)
                 .Select(u => u.Id)
@@ -285,7 +286,7 @@ namespace XLead_Server.Repositories
                 return Enumerable.Empty<ManagerStageCountDto>();
             }
 
-            // Step 2: Fetch deals created by these salespersons, group by stage, and count
+           
             var stageCounts = await _context.Deals
                 .Where(d => salespersonIds.Contains(d.CreatedBy))
                 .Include(d => d.dealStage)
@@ -302,17 +303,50 @@ namespace XLead_Server.Repositories
             _logger.LogInformation("Repository: Calculated {Count} stage groups for manager ID {ManagerUserId}", stageCounts.Count, managerUserId);
             return stageCounts;
         }
-
-        public async Task<IEnumerable<TopCustomerDto>> GetTopCustomersByRevenueAsync(long userId, int count)
+        private async Task<List<long>> GetRelevantDealCreatorIdsAsync(long requestingUserId)
         {
-            _logger.LogInformation($"Fetching top {count} customers by revenue won for User ID: {userId}.");
+            var privileges = await _userPrivilegeRepository.GetPrivilegesByUserIdAsync(requestingUserId);
+            bool hasOverviewPrivilege = privileges?.Any(p => p.PrivilegeName == "Dashboard Overview") ?? false;
 
-            var userDealsQuery = _context.Deals.Where(d => d.CreatedBy == userId); 
+            if (hasOverviewPrivilege)
+            {
+                _logger.LogInformation($"User {requestingUserId} has 'Dashboard Overview' privilege. Fetching subordinate IDs.");
+               
+                var subordinateIds = await _context.Users
+                    .Where(u => u.AssignedTo == requestingUserId)
+                    .Select(u => u.Id)
+                    .ToListAsync();
 
-            var topCustomersData = await userDealsQuery 
+                if (!subordinateIds.Any())
+                {
+                    _logger.LogInformation($"Manager {requestingUserId} has no subordinates assigned directly via 'AssignedTo'.");
+                   
+                }
+                var relevantIds = new List<long>(subordinateIds);
+                relevantIds.Add(requestingUserId); 
+                return relevantIds;
+                
+                
+            }
+            else
+            {
+                _logger.LogInformation($"User {requestingUserId} does not have 'Dashboard Overview'. Fetching their own deals.");
+               
+                return new List<long> { requestingUserId };
+            }
+        }
+        public async Task<IEnumerable<TopCustomerDto>> GetTopCustomersByRevenueAsync(long requestingUserId, int count)
+        {
+            var relevantCreatorIds = await GetRelevantDealCreatorIdsAsync(requestingUserId);
+            if (!relevantCreatorIds.Any()) return Enumerable.Empty<TopCustomerDto>();
+
+            _logger.LogInformation($"Fetching top {count} customers by revenue for relevant creator IDs: [{string.Join(",", relevantCreatorIds)}].");
+
+            var topCustomersData = await _context.Deals
+                           .Where(d => relevantCreatorIds.Contains(d.CreatedBy)) 
                            .Where(d => d.dealStage.StageName == StageClosedWon && d.contact != null && d.contact.customer != null)
-                           .Include(d => d.contact)
-                               .ThenInclude(c => c.customer)
+                           .Include(d => d.contact).ThenInclude(c => c.customer)
+                           .Include(d => d.dealStage) 
                            .GroupBy(d => new { d.contact.customer.Id, d.contact.customer.CustomerName })
                            .Select(g => new TopCustomerDto
                            {
@@ -322,8 +356,6 @@ namespace XLead_Server.Repositories
                            .OrderByDescending(c => c.TotalRevenueWon)
                            .Take(count)
                            .ToListAsync();
-
-            _logger.LogInformation($"Successfully fetched top customers data for User ID: {userId}. Count: {topCustomersData.Count}");
             return topCustomersData;
         }
 
@@ -350,19 +382,21 @@ namespace XLead_Server.Repositories
             return Math.Round(((double)(currentValue - previousValue) / (double)previousValue) * 100.0, 2);
         }
 
-        public async Task<IEnumerable<MonthlyRevenueDto>> GetMonthlyRevenueWonAsync(long userId, int numberOfMonths)
+        public async Task<IEnumerable<MonthlyRevenueDto>> GetMonthlyRevenueWonAsync(long requestingUserId, int numberOfMonths)
         {
-            _logger.LogInformation($"Fetching monthly revenue won for the last {numberOfMonths} months for User ID: {userId}.");
+            var relevantCreatorIds = await GetRelevantDealCreatorIdsAsync(requestingUserId);
+            if (!relevantCreatorIds.Any()) return Enumerable.Empty<MonthlyRevenueDto>();
+
+            _logger.LogInformation($"Fetching monthly revenue won for relevant creator IDs: [{string.Join(",", relevantCreatorIds)}] for {numberOfMonths} months.");
 
             var startDate = DateTime.UtcNow.AddMonths(-(numberOfMonths - 1));
             var firstDayOfStartDateMonth = new DateTime(startDate.Year, startDate.Month, 1, 0, 0, 0, DateTimeKind.Utc);
 
-            var userDealsQuery = _context.Deals.Where(d => d.CreatedBy == userId); 
-
-            var monthlyRevenueData = await userDealsQuery 
+            var monthlyRevenueData = await _context.Deals
+                .Where(d => relevantCreatorIds.Contains(d.CreatedBy)) 
                 .Where(d => d.dealStage.StageName == StageClosedWon &&
                              d.ClosingDate >= firstDayOfStartDateMonth)
-                .Include(d => d.dealStage) 
+                .Include(d => d.dealStage)
                 .GroupBy(d => new { d.ClosingDate.Year, d.ClosingDate.Month })
                 .Select(g => new
                 {
@@ -370,26 +404,24 @@ namespace XLead_Server.Repositories
                     Month = g.Key.Month,
                     TotalRevenue = g.Sum(d => d.DealAmount)
                 })
-                .OrderBy(r => r.Year)
-                .ThenBy(r => r.Month)
+                .OrderBy(r => r.Year).ThenBy(r => r.Month)
                 .ToListAsync();
 
-            var result = monthlyRevenueData.Select(r => new MonthlyRevenueDto
+            return monthlyRevenueData.Select(r => new MonthlyRevenueDto
             {
                 MonthYear = new DateTime(r.Year, r.Month, 1).ToString("MMMM yyyy", CultureInfo.InvariantCulture),
                 TotalRevenue = r.TotalRevenue
             }).ToList();
-
-            _logger.LogInformation($"Successfully fetched {result.Count} months of revenue data for User ID: {userId}.");
-            return result;
         }
-        public async Task<IEnumerable<PipelineStageDataDto>> GetOpenPipelineAmountsByStageAsync(long userId)
+        public async Task<IEnumerable<PipelineStageDataDto>> GetOpenPipelineAmountsByStageAsync(long requestingUserId)
         {
-            _logger.LogInformation($"Fetching open pipeline amounts by stage for User ID: {userId}.");
+            var relevantCreatorIds = await GetRelevantDealCreatorIdsAsync(requestingUserId);
+            if (!relevantCreatorIds.Any()) return Enumerable.Empty<PipelineStageDataDto>();
 
-            var userDealsQuery = _context.Deals.Where(d => d.CreatedBy == userId); 
+            _logger.LogInformation($"Fetching open pipeline amounts by stage for relevant creator IDs: [{string.Join(",", relevantCreatorIds)}].");
 
-            var openPipelineData = await userDealsQuery 
+            var openPipelineData = await _context.Deals
+                .Where(d => relevantCreatorIds.Contains(d.CreatedBy)) 
                 .Include(d => d.dealStage)
                 .Where(d => d.dealStage.StageName != StageClosedWon && d.dealStage.StageName != StageClosedLost)
                 .GroupBy(d => d.dealStage.StageName)
@@ -400,24 +432,33 @@ namespace XLead_Server.Repositories
                 })
                 .OrderBy(s => s.StageName)
                 .ToListAsync();
-
-            _logger.LogInformation($"Successfully fetched {openPipelineData.Count} stages with open pipeline amounts for User ID: {userId}.");
             return openPipelineData;
         }
-        public async Task<DashboardMetricsDto> GetDashboardMetricsAsync(long userId)
+        public async Task<DashboardMetricsDto> GetDashboardMetricsAsync(long requestingUserId)
         {
-            _logger.LogInformation($"Calculating dashboard metrics for User ID: {userId}.");
-            var metrics = new DashboardMetricsDto();
+            var relevantCreatorIds = await GetRelevantDealCreatorIdsAsync(requestingUserId);
+    
+            if (!relevantCreatorIds.Any())
+            {
+                _logger.LogWarning($"No relevant creator IDs found for GetDashboardMetricsAsync (Requesting User: {requestingUserId}). Returning empty metrics.");
+                return new DashboardMetricsDto
+                { 
+                    OpenPipelines = new DashboardMetricItemDto { Value = "0", PercentageChange = 0, IsPositiveTrend = true },
+                    PipelinesWon = new DashboardMetricItemDto { Value = "0", PercentageChange = 0, IsPositiveTrend = true },
+                    PipelinesLost = new DashboardMetricItemDto { Value = "0", PercentageChange = 0, IsPositiveTrend = true },
+                    RevenueWon = new DashboardMetricItemDto { Value = "$0.00", PercentageChange = 0, IsPositiveTrend = true }
+                };
+            }
+
+            _logger.LogInformation($"Calculating dashboard metrics for relevant creator IDs: [{string.Join(",", relevantCreatorIds)}].");
+            var metrics = new DashboardMetricsDto(); 
             var now = DateTime.UtcNow;
             var currentMonthStart = new DateTime(now.Year, now.Month, 1, 0, 0, 0, DateTimeKind.Utc);
             var currentMonthEnd = currentMonthStart.AddMonths(1);
             var previousMonthStart = currentMonthStart.AddMonths(-1);
 
-           
-            var userDealsQuery = _context.Deals.Where(d => d.CreatedBy == userId); 
-
-           
-            var dealProjections = await userDealsQuery 
+            var dealProjections = await _context.Deals
+                .Where(d => relevantCreatorIds.Contains(d.CreatedBy)) 
                 .Where(d => (d.CreatedAt >= previousMonthStart && d.CreatedAt < currentMonthEnd) ||
                              (d.ClosingDate >= previousMonthStart && d.ClosingDate < currentMonthEnd))
                 .Include(d => d.dealStage)
@@ -431,54 +472,61 @@ namespace XLead_Server.Repositories
                 })
                 .ToListAsync();
 
-            _logger.LogInformation($"Fetched {dealProjections.Count} deal projections for User ID {userId} dashboard metrics.");
-
-     
+           
             var currentMonthOpenDealsCount = dealProjections
                 .Count(d => d.CreatedAt >= currentMonthStart && d.CreatedAt < currentMonthEnd &&
-                             d.DealStageName != StageClosedWon && d.DealStageName != StageClosedLost);
-           
+                                d.DealStageName != StageClosedWon && d.DealStageName != StageClosedLost);
             var previousMonthOpenDealsCount = dealProjections
-                .Count(d => d.CreatedAt >= previousMonthStart && d.CreatedAt < currentMonthStart && 
-                             d.DealStageName != StageClosedWon && d.DealStageName != StageClosedLost);
-            metrics.OpenPipelines.Value = currentMonthOpenDealsCount.ToString();
-            metrics.OpenPipelines.PercentageChange = CalculatePercentageChange((double)currentMonthOpenDealsCount, (double)previousMonthOpenDealsCount);
-            metrics.OpenPipelines.IsPositiveTrend = currentMonthOpenDealsCount >= previousMonthOpenDealsCount;
+                .Count(d => d.CreatedAt >= previousMonthStart && d.CreatedAt < currentMonthStart &&
+                                d.DealStageName != StageClosedWon && d.DealStageName != StageClosedLost);
+            metrics.OpenPipelines = new DashboardMetricItemDto
+            { 
+                Value = currentMonthOpenDealsCount.ToString(),
+                PercentageChange = CalculatePercentageChange((double)currentMonthOpenDealsCount, (double)previousMonthOpenDealsCount),
+                IsPositiveTrend = currentMonthOpenDealsCount >= previousMonthOpenDealsCount
+            };
 
             var currentMonthWonDealsCount = dealProjections
                 .Count(d => d.ClosingDate >= currentMonthStart && d.ClosingDate < currentMonthEnd &&
-                             d.DealStageName == StageClosedWon);
+                                d.DealStageName == StageClosedWon);
             var previousMonthWonDealsCount = dealProjections
-                .Count(d => d.ClosingDate >= previousMonthStart && d.ClosingDate < currentMonthStart && 
-                             d.DealStageName == StageClosedWon);
-            metrics.PipelinesWon.Value = currentMonthWonDealsCount.ToString();
-            metrics.PipelinesWon.PercentageChange = CalculatePercentageChange((double)currentMonthWonDealsCount, (double)previousMonthWonDealsCount);
-            metrics.PipelinesWon.IsPositiveTrend = currentMonthWonDealsCount >= previousMonthWonDealsCount;
+                .Count(d => d.ClosingDate >= previousMonthStart && d.ClosingDate < currentMonthStart &&
+                                d.DealStageName == StageClosedWon);
+            metrics.PipelinesWon = new DashboardMetricItemDto
+            {
+                Value = currentMonthWonDealsCount.ToString(),
+                PercentageChange = CalculatePercentageChange((double)currentMonthWonDealsCount, (double)previousMonthWonDealsCount),
+                IsPositiveTrend = currentMonthWonDealsCount >= previousMonthWonDealsCount
+            };
 
             var currentMonthLostDealsCount = dealProjections
                 .Count(d => d.ClosingDate >= currentMonthStart && d.ClosingDate < currentMonthEnd &&
-                             d.DealStageName == StageClosedLost);
+                                d.DealStageName == StageClosedLost);
             var previousMonthLostDealsCount = dealProjections
-                .Count(d => d.ClosingDate >= previousMonthStart && d.ClosingDate < currentMonthStart && 
-                             d.DealStageName == StageClosedLost);
-            metrics.PipelinesLost.Value = currentMonthLostDealsCount.ToString();
-            metrics.PipelinesLost.PercentageChange = CalculatePercentageChange((double)currentMonthLostDealsCount, (double)previousMonthLostDealsCount);
-            metrics.PipelinesLost.IsPositiveTrend = currentMonthLostDealsCount <= previousMonthLostDealsCount; 
+                .Count(d => d.ClosingDate >= previousMonthStart && d.ClosingDate < currentMonthStart &&
+                                d.DealStageName == StageClosedLost);
+            metrics.PipelinesLost = new DashboardMetricItemDto
+            {
+                Value = currentMonthLostDealsCount.ToString(),
+                PercentageChange = CalculatePercentageChange((double)currentMonthLostDealsCount, (double)previousMonthLostDealsCount),
+                IsPositiveTrend = currentMonthLostDealsCount <= previousMonthLostDealsCount
+            };
 
             var currentMonthRevenueWonSum = dealProjections
                 .Where(d => d.ClosingDate >= currentMonthStart && d.ClosingDate < currentMonthEnd &&
-                             d.DealStageName == StageClosedWon)
+                                d.DealStageName == StageClosedWon)
                 .Sum(d => d.DealAmount);
             var previousMonthRevenueWonSum = dealProjections
-                .Where(d => d.ClosingDate >= previousMonthStart && d.ClosingDate < currentMonthStart && 
-                             d.DealStageName == StageClosedWon)
+                .Where(d => d.ClosingDate >= previousMonthStart && d.ClosingDate < currentMonthStart &&
+                                d.DealStageName == StageClosedWon)
                 .Sum(d => d.DealAmount);
-            metrics.RevenueWon.Value = currentMonthRevenueWonSum.ToString("C", CultureInfo.GetCultureInfo("en-US"));
-            metrics.RevenueWon.PercentageChange = CalculatePercentageChange(currentMonthRevenueWonSum, previousMonthRevenueWonSum);
-            metrics.RevenueWon.IsPositiveTrend = currentMonthRevenueWonSum >= previousMonthRevenueWonSum;
+            metrics.RevenueWon = new DashboardMetricItemDto
+            {
+                Value = currentMonthRevenueWonSum.ToString("C", CultureInfo.GetCultureInfo("en-US")),
+                PercentageChange = CalculatePercentageChange(currentMonthRevenueWonSum, previousMonthRevenueWonSum),
+                IsPositiveTrend = currentMonthRevenueWonSum >= previousMonthRevenueWonSum
+            };
 
-
-            _logger.LogInformation("Calculated dashboard metrics for User ID {UserId}: {@Metrics}", userId, metrics);
             return metrics;
         }
 

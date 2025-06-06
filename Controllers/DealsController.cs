@@ -282,14 +282,14 @@ namespace XLead_Server.Controllers
         [ProducesResponseType(typeof(IEnumerable<TopCustomerDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError)]
         public async Task<ActionResult<IEnumerable<TopCustomerDto>>> GetTopCustomersData(
-        long userId, // <-- New parameter
+        long userId, 
         [FromQuery] int count = 5)
         {
             _logger.LogInformation($"Fetching top {count} customers by revenue for User ID: {userId}.");
 
             try
             {
-                var topCustomers = await _dealRepository.GetTopCustomersByRevenueAsync(userId, count); // Pass userId
+                var topCustomers = await _dealRepository.GetTopCustomersByRevenueAsync(userId, count); 
                 return Ok(topCustomers);
             }
             catch (Exception ex)
@@ -302,34 +302,48 @@ namespace XLead_Server.Controllers
             }
         }
         [HttpGet("dashboard-metrics/{userId}")]
-        [ProducesResponseType(typeof(DashboardMetricsDto), 200)]
+        [ProducesResponseType(typeof(DashboardMetricsDto), 200)] // Assuming DTO is DashboardMetricsDto
+        [ProducesResponseType(403)] // User lacks general permission to view any dashboard
         [ProducesResponseType(500)]
-        public async Task<ActionResult<DashboardMetricsDto>> GetDashboardMetrics(long userId) // <-- New parameter
+        public async Task<ActionResult<DashboardMetricsDto>> GetDashboardMetrics(long userId)
         {
-            _logger.LogInformation($"Fetching dashboard metrics for User ID: {userId}");
-            // ... (Optional privilege check for userId) ...
+            _logger.LogInformation($"Fetching dashboard metrics. Requesting User/Context User ID: {userId}");
+
+            var privileges = await _userPrivilegeRepository.GetPrivilegesByUserIdAsync(userId);
+            if (privileges == null || !privileges.Any(p => p.PrivilegeName == "ViewOwnDashboard" || p.PrivilegeName == "Dashboard Overview")) // Example
+            {
+                _logger.LogWarning($"User {userId} lacks necessary privileges to view dashboard metrics.");
+                return Forbid("User lacks permission to view dashboard metrics.");
+            }
+
             try
             {
-                var metrics = await _dealRepository.GetDashboardMetricsAsync(userId); // Pass userId
+              
+                var metrics = await _dealRepository.GetDashboardMetricsAsync(userId);
                 return Ok(metrics);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error fetching dashboard metrics: {Message}", ex.Message);
+                _logger.LogError(ex, "Error fetching dashboard metrics for User ID {UserId}: {Message}", userId, ex.Message);
                 return Problem("An unexpected error occurred while fetching dashboard metrics.", statusCode: 500);
             }
         }
-
         [HttpGet("open-pipeline-stages/{userId}")]
         [ProducesResponseType(typeof(IEnumerable<PipelineStageDataDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError)]
-        public async Task<ActionResult<IEnumerable<PipelineStageDataDto>>> GetOpenPipelineStageData(long userId) // <-- New parameter
+        public async Task<ActionResult<IEnumerable<PipelineStageDataDto>>> GetOpenPipelineStageData(long userId) 
         {
             _logger.LogInformation($"Fetching data for open pipeline stage graph for User ID: {userId}.");
-            // ... (Optional privilege check for userId) ...
+            var privileges = await _userPrivilegeRepository.GetPrivilegesByUserIdAsync(userId);
+            if (privileges == null || !privileges.Any(p => p.PrivilegeName == "ViewOwnDashboard" || p.PrivilegeName == "Dashboard Overview")) // Example
+            {
+                _logger.LogWarning($"User {userId} lacks necessary privileges to view dashboard metrics.");
+                return Forbid("User lacks permission to view dashboard metrics.");
+            }
+
             try
             {
-                var stageData = await _dealRepository.GetOpenPipelineAmountsByStageAsync(userId); // Pass userId
+                var stageData = await _dealRepository.GetOpenPipelineAmountsByStageAsync(userId); 
                 return Ok(stageData);
             }
             catch (Exception ex)
@@ -346,15 +360,20 @@ namespace XLead_Server.Controllers
         [ProducesResponseType(typeof(IEnumerable<MonthlyRevenueDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError)]
         public async Task<ActionResult<IEnumerable<MonthlyRevenueDto>>> GetMonthlyRevenueData(
-    long userId, // <-- New parameter
+    long userId, 
     [FromQuery] int months = 12)
         {
             _logger.LogInformation($"Fetching monthly revenue data for the last {months} months for User ID: {userId}.");
-            // ... (existing validation for months) ...
-            // ... (Optional privilege check for userId) ...
+            var privileges = await _userPrivilegeRepository.GetPrivilegesByUserIdAsync(userId);
+            if (privileges == null || !privileges.Any(p => p.PrivilegeName == "ViewOwnDashboard" || p.PrivilegeName == "Dashboard Overview")) // Example
+            {
+                _logger.LogWarning($"User {userId} lacks necessary privileges to view dashboard metrics.");
+                return Forbid("User lacks permission to view dashboard metrics.");
+            }
+
             try
             {
-                var revenueData = await _dealRepository.GetMonthlyRevenueWonAsync(userId, months); // Pass userId
+                var revenueData = await _dealRepository.GetMonthlyRevenueWonAsync(userId, months); 
                 return Ok(revenueData);
             }
             catch (Exception ex)

@@ -14,9 +14,10 @@ namespace XLead_Server.Interfaces
         Task<IEnumerable<DealReadDto>> GetDealsByCreatorIdAsync(long creatorId);
         Task<IEnumerable<DealManagerOverviewDto>> GetDealsForManagerAsync(long managerUserId);
         Task<IEnumerable<ManagerStageCountDto>> GetStageCountsForManagerAsync(long managerUserId);
-        Task<DashboardMetricsDto> GetDashboardMetricsAsync(long userId);
-        Task<IEnumerable<PipelineStageDataDto>> GetOpenPipelineAmountsByStageAsync(long userId);
-        Task<IEnumerable<MonthlyRevenueDto>> GetMonthlyRevenueWonAsync(long userId, int numberOfMonths);
-        Task<IEnumerable<TopCustomerDto>> GetTopCustomersByRevenueAsync(long userId, int count);
+        Task<DashboardMetricsDto> GetDashboardMetricsAsync(long requestingUserId);
+        Task<IEnumerable<PipelineStageDataDto>> GetOpenPipelineAmountsByStageAsync(long requestingUserId);
+        Task<IEnumerable<MonthlyRevenueDto>> GetMonthlyRevenueWonAsync(long requestingUserId, int numberOfMonths);
+        Task<IEnumerable<TopCustomerDto>> GetTopCustomersByRevenueAsync(long requestingUserId, int count);
+
     }
 }

@@ -38,14 +38,14 @@ namespace XLead_Server.Controllers
             return Ok(dealDto);
         }
 
-        [HttpGet] // Will respond to GET api/Deals and GET api/Deals?createdByUserId=5
+        [HttpGet] 
         [ProducesResponseType(typeof(IEnumerable<DealReadDto>), 200)]
         public async Task<ActionResult<IEnumerable<DealReadDto>>> GetAllDeals([FromQuery] long? createdByUserId)
         {
             if (createdByUserId.HasValue)
             {
                 _logger.LogInformation("Fetching all deals for creator ID {CreatedByUserId}", createdByUserId.Value);
-                // Optional privilege check as in Option 1, using createdByUserId.Value
+                
             }
             else
             {
@@ -106,11 +106,11 @@ namespace XLead_Server.Controllers
 
 
         [HttpPut("{id}/stage")]
-        [ProducesResponseType(typeof(DealReadDto), 200)]      // OK
-        [ProducesResponseType(400)]                          // Bad Request (e.g., stage not found, validation)
-        [ProducesResponseType(403)]                          // Forbidden (lacks privilege)
-        [ProducesResponseType(404)]                          // Not Found (deal not found)
-        [ProducesResponseType(500)]                          // Internal Server Error
+        [ProducesResponseType(typeof(DealReadDto), 200)]      
+        [ProducesResponseType(400)]                         
+        [ProducesResponseType(403)]                          
+        [ProducesResponseType(404)]                          
+        [ProducesResponseType(500)]                          
         public async Task<IActionResult> UpdateDealStage(long id, [FromBody] DealUpdateDto dto)
         {
             _logger.LogInformation("Attempting to update stage for deal ID {DealId} with payload: {@DealUpdateDto}", id, dto);
@@ -276,7 +276,103 @@ namespace XLead_Server.Controllers
 
         return Ok(counts);
     }
+        
+       
+        [HttpGet("top-customers-by-revenue")] 
+        [ProducesResponseType(typeof(IEnumerable<TopCustomerDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError)]
+        public async Task<ActionResult<IEnumerable<TopCustomerDto>>> GetTopCustomersData(
+           [FromQuery] int count = 5) 
+        {
+            _logger.LogInformation($"Fetching top {count} customers by revenue.");
+            if (count <= 0)
+            {
+                return BadRequest("Count must be a positive integer.");
+            }
+            if (count > 50) 
+            {
+                return BadRequest("Count cannot exceed 50.");
+            }
 
-   
-}
+            try
+            {
+                var topCustomers = await _dealRepository.GetTopCustomersByRevenueAsync(count);
+                return Ok(topCustomers);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error fetching top customers by revenue: {Message}", ex.Message);
+                return Problem(
+                    detail: "An unexpected error occurred while fetching top customers data.",
+                    statusCode: StatusCodes.Status500InternalServerError,
+                    title: "Server Error");
+            }
+        }
+        [HttpGet("dashboard-metrics")]
+        [ProducesResponseType(typeof(DashboardMetricsDto), 200)]
+        [ProducesResponseType(500)]
+        public async Task<ActionResult<DashboardMetricsDto>> GetDashboardMetrics()
+        {
+            _logger.LogInformation("Fetching dashboard metrics");
+            try
+            {
+                var metrics = await _dealRepository.GetDashboardMetricsAsync();
+                return Ok(metrics);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error fetching dashboard metrics: {Message}", ex.Message);
+                return Problem("An unexpected error occurred while fetching dashboard metrics.", statusCode: 500);
+            }
+        }
+
+        [HttpGet("open-pipeline-stages")] 
+        [ProducesResponseType(typeof(IEnumerable<PipelineStageDataDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError)]
+        public async Task<ActionResult<IEnumerable<PipelineStageDataDto>>> GetOpenPipelineStageData()
+        {
+            _logger.LogInformation("Fetching data for open pipeline stage graph.");
+            try
+            {
+                var stageData = await _dealRepository.GetOpenPipelineAmountsByStageAsync();
+                return Ok(stageData);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error fetching open pipeline stage data: {Message}", ex.Message);
+                return Problem(
+                    detail: "An unexpected error occurred while fetching data for the pipeline stage graph.",
+                    statusCode: StatusCodes.Status500InternalServerError,
+                    title: "Server Error");
+            }
+        }
+
+        [HttpGet("monthly-revenue-won")]
+        [ProducesResponseType(typeof(IEnumerable<MonthlyRevenueDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError)]
+        public async Task<ActionResult<IEnumerable<MonthlyRevenueDto>>> GetMonthlyRevenueData(
+        [FromQuery] int months = 12)
+        {
+            _logger.LogInformation($"Fetching monthly revenue data for the last {months} months.");
+            if (months <= 0)
+            {
+                return BadRequest("Number of months must be a positive integer.");
+            }
+
+            try
+            {
+                var revenueData = await _dealRepository.GetMonthlyRevenueWonAsync(months);
+                return Ok(revenueData);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error fetching monthly revenue data: {Message}", ex.Message);
+                return Problem(
+                    detail: "An unexpected error occurred while fetching monthly revenue data.",
+                    statusCode: StatusCodes.Status500InternalServerError,
+                    title: "Server Error");
+            }
+        }
+
+    }
 }

@@ -1,6 +1,10 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 using XLead_Server.Interfaces;
+using XLead_Server.Models;
 
 namespace XLead_Server.Controllers
 {
@@ -8,20 +12,22 @@ namespace XLead_Server.Controllers
     [ApiController]
     public class DuController : ControllerBase
     {
-        private IDuRepository _duRepository;
+        private readonly IDuRepository _duRepository;
+
         public DuController(IDuRepository duRepository)
         {
             _duRepository = duRepository;
         }
 
         [HttpGet]
-
-        public async Task<IActionResult> Get()
+        [ProducesResponseType(typeof(IEnumerable<DU>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<ActionResult<IEnumerable<DU>>> GetAllDusAsync()
         {
             var dus = await _duRepository.GetDus();
             if (dus == null)
             {
-                return NotFound();
+                return NotFound("DU data is currently unavailable or no DUs found.");
             }
             return Ok(dus);
         }

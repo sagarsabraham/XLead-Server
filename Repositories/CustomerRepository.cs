@@ -66,5 +66,47 @@ namespace XLead_Server.Repositories
                 c => c.Contacts.Select(ct => $"{ct.FirstName} {ct.LastName}".Trim()).ToList()
             );
         }
+
+        public async Task<Customer?> UpdateCustomerAsync(long id, CustomerUpdateDto dto)
+        {
+            var existingCustomer = await _context.Customers.FindAsync(id);
+            if (existingCustomer == null)
+            {
+                return null;
+            }
+
+            
+            _mapper.Map(dto, existingCustomer);
+
+            
+            existingCustomer.UpdatedAt = DateTime.UtcNow;
+           
+
+            await _context.SaveChangesAsync();
+            return existingCustomer;
+        }
+
+       
+        public async Task<bool> DeleteCustomerAsync(long id)
+        {
+            var customerToDelete = await _context.Customers
+                .Include(c => c.Contacts) 
+                .FirstOrDefaultAsync(c => c.Id == id);
+
+            if (customerToDelete == null)
+            {
+                return false;
+            }
+
+            //if (customerToDelete.Contacts.Any())
+            //{
+            //    return false;
+            //}
+
+            _context.Customers.Remove(customerToDelete);
+            await _context.SaveChangesAsync();
+            return true;
+        }
+
     }
 }

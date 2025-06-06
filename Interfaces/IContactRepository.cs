@@ -12,7 +12,11 @@ namespace XLead_Server.Interfaces
         Task<Contact> AddContactAsync(ContactCreateDto dto);
         Task<IEnumerable<ContactReadDto>> GetAllContactsAsync();
 
-        // **** CRUCIAL METHOD FOR DEAL CREATION LOGIC ****
+       
         Task<Contact?> GetByFullNameAndCustomerIdAsync(string firstName, string? lastName, long customerId);
+        Task<Contact?> UpdateContactAsync(long id, ContactUpdateDto dto);
+        Task<bool> DeleteContactAsync(long id);
+
+
     }
 }

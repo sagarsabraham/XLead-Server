@@ -44,5 +44,56 @@ namespace XLead_Server.Repositories
                                          (lastName == null || c.LastName == lastName) &&
                                          c.CustomerId == customerId);
         }
+        public async Task<Contact?> UpdateContactAsync(long id, ContactUpdateDto dto)
+        {
+         
+            var existingContact = await _context.Contacts.FindAsync(id);
+
+            if (existingContact == null)
+            {
+                return null; // The contact to update wasn't found.
+            }
+
+          
+            existingContact.FirstName = dto.FirstName;
+            existingContact.LastName = dto.LastName;
+            existingContact.Designation = dto.Designation;
+            existingContact.Email = dto.Email;
+            existingContact.PhoneNumber = dto.PhoneNumber;
+            existingContact.IsActive = dto.IsActive;
+
+            // Step 3: Set the audit fields.
+            existingContact.UpdatedAt = DateTime.UtcNow;
+          
+
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateException ex)
+            {
+                // If there's a database-level error (like a constraint violation),
+                // this will catch it and provide a more specific message.
+                Console.WriteLine(ex.ToString());
+                throw; // Re-throw the exception to be caught by the controller.
+            }
+
+            return existingContact;
+        }
+
+
+        public async Task<bool> DeleteContactAsync(long id)
+        {
+            var contactToDelete = await _context.Contacts.FindAsync(id);
+            if (contactToDelete == null)
+            {
+                return false; 
+            }
+
+            _context.Contacts.Remove(contactToDelete);
+            await _context.SaveChangesAsync();
+            return true;
+        }
+
     }
 }

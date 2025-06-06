@@ -226,5 +226,57 @@ namespace XLead_Server.Controllers
             }
             return Ok(deals);
         }
+     
+    [HttpGet("manager-overview-deals/{managerId}")]
+    [ProducesResponseType(typeof(IEnumerable<DealManagerOverviewDto>), 200)]
+    [ProducesResponseType(403)] 
+    [ProducesResponseType(404)] 
+    public async Task<ActionResult<IEnumerable<DealManagerOverviewDto>>> GetManagerOverviewDealsList(long managerId)
+    {
+        _logger.LogInformation("Attempting to fetch manager overview deals for Manager ID: {ManagerIdFromRoute}", managerId);
+
+        
+        var privileges = await _userPrivilegeRepository.GetPrivilegesByUserIdAsync(managerId);
+        if (privileges == null || !privileges.Any(p => p.PrivilegeName == "overview"))
+        {
+            _logger.LogWarning("User with ID {ManagerIdFromRoute} lacks 'Overview' privilege or does not exist.", managerId);
+            return Forbid($"User ID {managerId} lacks the required 'Overview' privilege to view this data.");
+        }
+
+        _logger.LogInformation("User {ManagerIdFromRoute} confirmed to have 'Overview' privilege. Fetching deals for their direct reports.", managerId);
+        var deals = await _dealRepository.GetDealsForManagerAsync(managerId); 
+
+        if (deals == null || !deals.Any())
+        {
+            _logger.LogInformation("No deals found for manager overview (Manager ID: {ManagerIdFromRoute}).", managerId);
+            return Ok(Enumerable.Empty<DealManagerOverviewDto>());
+        }
+        return Ok(deals);
     }
+
+
+    [HttpGet("manager-overview-stage-counts/{managerId}")]
+    [ProducesResponseType(typeof(IEnumerable<ManagerStageCountDto>), 200)]
+    [ProducesResponseType(403)] 
+    [ProducesResponseType(404)] 
+    public async Task<ActionResult<IEnumerable<ManagerStageCountDto>>> GetManagerOverviewStageCountsData(long managerId)
+    {
+        _logger.LogInformation("Attempting to fetch manager overview stage counts for Manager ID: {ManagerIdFromRoute}", managerId);
+
+      
+        var privileges = await _userPrivilegeRepository.GetPrivilegesByUserIdAsync(managerId);
+        if (privileges == null || !privileges.Any(p => p.PrivilegeName == "overview"))
+        {
+            _logger.LogWarning("User with ID {ManagerIdFromRoute} lacks 'Overview' privilege for stage counts or does not exist.", managerId);
+            return Forbid($"User ID {managerId} lacks the required 'Overview' privilege to view this data.");
+        }
+
+        _logger.LogInformation("User {ManagerIdFromRoute} confirmed to have 'Overview' privilege. Fetching stage counts for their direct reports.", managerId);
+        var counts = await _dealRepository.GetStageCountsForManagerAsync(managerId); 
+
+        return Ok(counts);
+    }
+
+   
+}
 }

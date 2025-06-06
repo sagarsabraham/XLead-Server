@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using AutoMapper;
 using Microsoft.EntityFrameworkCore;
+using XLead_Server.Controllers;
 using XLead_Server.Data;
 using XLead_Server.DTOs;
 using XLead_Server.Interfaces;
@@ -17,17 +18,19 @@ namespace XLead_Server.Repositories
         private readonly ICustomerRepository _customerRepository;
         private readonly IContactRepository _contactRepository;
         private readonly IMapper _mapper;
-
+        private readonly ILogger<DealsController> _logger;
         public DealRepository(
             ApiDbContext context,
             ICustomerRepository customerRepository,
             IContactRepository contactRepository,
-            IMapper mapper)
+            IMapper mapper,
+            ILogger<DealsController> logger)
         {
             _context = context;
             _customerRepository = customerRepository;
             _contactRepository = contactRepository;
             _mapper = mapper;
+            _logger = logger;
         }
 
         public async Task<DealReadDto?> AddDealAsync(DealCreateDto dto)
@@ -137,7 +140,7 @@ namespace XLead_Server.Repositories
             return _mapper.Map<DealReadDto>(deal);
         }
 
-        public async Task<IEnumerable<DealReadDto>> GetAllDealsAsync() // <--- NO CHANGE HERE
+        public async Task<IEnumerable<DealReadDto>> GetAllDealsAsync() 
         {
           
             return await _context.Deals
@@ -182,12 +185,12 @@ namespace XLead_Server.Repositories
           
             return await GetDealByIdAsync(deal.Id);
         }
-        // In XLead_Server.Repositories.DealRepository.cs
+      
         public async Task<IEnumerable<DealReadDto>> GetDealsByCreatorIdAsync(long creatorId)
         {
-            // Assuming you inject ILogger here too
+            
             return await _context.Deals
-                .Where(d => d.CreatedBy == creatorId) // Filter by the CreatedBy field
+                .Where(d => d.CreatedBy == creatorId) 
                 .AsNoTracking()
                 .Include(d => d.account)
                 .Include(d => d.region)
@@ -197,9 +200,101 @@ namespace XLead_Server.Repositories
                 .Include(d => d.country)
                 .Include(d => d.contact)
                 .Include(d => d.dealStage)
-                .OrderByDescending(d => d.CreatedAt) // Optional: order by creation date or other criteria
+                .OrderByDescending(d => d.CreatedAt) 
                 .Select(deal => _mapper.Map<DealReadDto>(deal))
                 .ToListAsync();
+        }
+        // In XLead_Server.Repositories.DealRepository.cs
+        // (Ensure ApiDbContext _context, IMapper _mapper, and ILogger<DealRepository> _logger are injected)
+
+        public async Task<IEnumerable<DealManagerOverviewDto>> GetDealsForManagerAsync(long managerUserId)
+        {
+          
+
+            // Step 1: Find all User IDs that are assigned to (report to) the managerUserId
+            var salespersonIds = await _context.Users
+                .Where(u => u.AssignedTo == managerUserId) // Key assumption: User.AssignedTo is the manager's ID
+                .Select(u => u.Id)
+                .ToListAsync();
+
+            if (!salespersonIds.Any())
+            {
+                _logger.LogInformation("Repository: No salespersons found reporting to manager ID {ManagerUserId}", managerUserId);
+                return Enumerable.Empty<DealManagerOverviewDto>();
+            }
+
+            _logger.LogInformation("Repository: Salespersons for manager {ManagerUserId}: {SalespersonIds}", managerUserId, string.Join(",", salespersonIds));
+
+            // Step 2: Fetch deals created by these salespersons
+            var deals = await _context.Deals
+                .Where(d => salespersonIds.Contains(d.CreatedBy)) // Filter deals by creators who are the identified salespersons
+                .Include(d => d.Creator)     // To get User.Name for SalespersonName
+                .Include(d => d.dealStage)   // For StageName
+                .Include(d => d.account)
+                .Include(d => d.region)
+                .Include(d => d.du)
+                .Include(d => d.contact)
+                // Add other .Include() statements if needed for other fields in DealManagerOverviewDto
+                .OrderByDescending(d => d.ClosingDate) // Example ordering
+                .ToListAsync();
+
+            _logger.LogInformation("Repository: Found {DealCount} deals for salespersons under manager {ManagerUserId}", deals.Count, managerUserId);
+
+            // Step 3: Project to DealManagerOverviewDto
+            // Using manual projection for clarity, especially for SalespersonName
+            var overviewDeals = deals.Select(deal => new DealManagerOverviewDto
+            {
+                Id = deal.Id,
+                DealName = deal.DealName,
+                DealAmount = deal.DealAmount,
+                StageName = deal.dealStage?.StageName,
+                ClosingDate = deal.ClosingDate,
+                SalespersonId = deal.CreatedBy,
+                SalespersonName = deal.Creator?.Name ?? $"User ID {deal.CreatedBy}", // Use User.Name
+                AccountName = deal.account?.AccountName,
+                RegionName = deal.region?.RegionName,
+                DUName = deal.du?.DUName,
+                ContactName = deal.contact != null ? $"{deal.contact.FirstName} {deal.contact.LastName}".Trim() : null,
+                StartingDate = deal.StartingDate
+                // Map other necessary fields...
+            }).ToList();
+
+            return overviewDeals;
+        }
+        // In XLead_Server.Repositories.DealRepository.cs
+
+        public async Task<IEnumerable<ManagerStageCountDto>> GetStageCountsForManagerAsync(long managerUserId)
+        {
+            _logger.LogInformation("Repository: Fetching stage counts for manager ID {ManagerUserId}", managerUserId);
+
+            // Step 1: Find all User IDs that are assigned to the managerUserId
+            var salespersonIds = await _context.Users
+                .Where(u => u.AssignedTo == managerUserId)
+                .Select(u => u.Id)
+                .ToListAsync();
+
+            if (!salespersonIds.Any())
+            {
+                _logger.LogInformation("Repository: No salespersons found for stage counts, manager ID {ManagerUserId}", managerUserId);
+                return Enumerable.Empty<ManagerStageCountDto>();
+            }
+
+            // Step 2: Fetch deals created by these salespersons, group by stage, and count
+            var stageCounts = await _context.Deals
+                .Where(d => salespersonIds.Contains(d.CreatedBy))
+                .Include(d => d.dealStage) // Essential for getting dealStage.StageName
+                .GroupBy(d => d.dealStage.StageName) // Group by the StageName
+                .Select(g => new ManagerStageCountDto
+                {
+                    StageName = g.Key ?? "Unassigned Stage", // Handle if StageName could be null (shouldn't if FK enforced)
+                    DealCount = g.Count()
+                    // TotalAmount = g.Sum(d => d.DealAmount) // Optional
+                })
+                .OrderBy(s => s.StageName) // Optional: for consistent ordering
+                .ToListAsync();
+
+            _logger.LogInformation("Repository: Calculated {Count} stage groups for manager ID {ManagerUserId}", stageCounts.Count, managerUserId);
+            return stageCounts;
         }
     }
 }

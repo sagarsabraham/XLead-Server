@@ -13,6 +13,7 @@ namespace XLead_Server.Interfaces
         Task<Dictionary<string, List<string>>> GetCustomerContactMapAsync();
         Task<IEnumerable<CustomerReadDto>> GetAllCustomersAsync();
         Task<Customer?> UpdateCustomerAsync(long id, CustomerUpdateDto dto);
-        Task<bool> DeleteCustomerAsync(long id);
+       
+        Task<Customer?> SoftDeleteCustomerAsync(long id);
     }
 }   

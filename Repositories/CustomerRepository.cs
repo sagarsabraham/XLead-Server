@@ -21,10 +21,11 @@ namespace XLead_Server.Repositories
 
         public async Task<IEnumerable<CustomerReadDto>> GetAllCustomersAsync()
         {
-            var customers = await _context.Customers.ToListAsync();
+            var customers = await _context.Customers
+                .Where(c => c.IsHidden == null || c.IsHidden == false) 
+                .ToListAsync();
             return _mapper.Map<IEnumerable<CustomerReadDto>>(customers);
         }
-
         public async Task<Customer> AddCustomerAsync(CustomerCreateDto dto)
         {
             // Validate IndustryVerticalId if provided
@@ -86,26 +87,22 @@ namespace XLead_Server.Repositories
             return existingCustomer;
         }
 
-       
-        public async Task<bool> DeleteCustomerAsync(long id)
-        {
-            var customerToDelete = await _context.Customers
-                .Include(c => c.Contacts) 
-                .FirstOrDefaultAsync(c => c.Id == id);
 
+        public async Task<Customer?> SoftDeleteCustomerAsync(long id)
+        {
+            var customerToDelete = await _context.Customers.FindAsync(id);
             if (customerToDelete == null)
             {
-                return false;
+                return null; // Not found
             }
 
-            //if (customerToDelete.Contacts.Any())
-            //{
-            //    return false;
-            //}
+            customerToDelete.IsHidden = true;
+            customerToDelete.IsActive = false; 
+            customerToDelete.UpdatedAt = DateTime.UtcNow;
+            //customerToDelete.UpdatedBy = updatedBy;
 
-            _context.Customers.Remove(customerToDelete);
             await _context.SaveChangesAsync();
-            return true;
+            return customerToDelete;
         }
 
     }

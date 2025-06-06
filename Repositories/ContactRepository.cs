@@ -33,10 +33,11 @@ namespace XLead_Server.Repositories
 
         public async Task<IEnumerable<ContactReadDto>> GetAllContactsAsync()
         {
-            var contacts = await _context.Contacts.ToListAsync();
+            var contacts = await _context.Contacts
+                .Where(c => c.IsHidden == null || c.IsHidden == false) 
+                .ToListAsync();
             return _mapper.Map<IEnumerable<ContactReadDto>>(contacts);
         }
-
         public async Task<Contact?> GetByFullNameAndCustomerIdAsync(string firstName, string? lastName, long customerId)
         {
             return await _context.Contacts
@@ -81,18 +82,21 @@ namespace XLead_Server.Repositories
             return existingContact;
         }
 
-
-        public async Task<bool> DeleteContactAsync(long id)
+        public async Task<Contact?> SoftDeleteContactAsync(long id)
         {
             var contactToDelete = await _context.Contacts.FindAsync(id);
             if (contactToDelete == null)
             {
-                return false; 
+                return null; // Not found
             }
 
-            _context.Contacts.Remove(contactToDelete);
+            contactToDelete.IsHidden = true;
+            contactToDelete.IsActive = false; 
+            contactToDelete.UpdatedAt = DateTime.UtcNow;
+            //contactToDelete.UpdatedBy = updatedBy;
+
             await _context.SaveChangesAsync();
-            return true;
+            return contactToDelete;
         }
 
     }

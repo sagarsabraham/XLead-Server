@@ -142,32 +142,35 @@ namespace XLead_Server.Controllers
                 return StatusCode(500, new { message = "An internal error occurred while updating the contact.", details = ex.ToString() });
             }
         }
+        // XLead_Server/Controllers/CustomerContactController.cs
+
         [HttpDelete("customer/{id}")]
-        public async Task<IActionResult> DeleteCustomer(int id) // REMOVED: [FromQuery] int userId
+        public async Task<IActionResult> SoftDeleteCustomer(long id)
         {
-            // --- PRIVILEGE CHECK REMOVED ---
-            var success = await _customerService.DeleteCustomerAsync(id);
-            if (!success)
+            
+
+            var result = await _customerService.SoftDeleteCustomerAsync(id);
+            if (result == null)
             {
-                return BadRequest("Customer not found or cannot be deleted (e.g., has associated contacts).");
+                return NotFound($"Customer with ID {id} not found.");
             }
 
-            return NoContent();
+            return NoContent(); // Success, no content to return
         }
 
         [HttpDelete("contact/{id}")]
-        public async Task<IActionResult> DeleteContact(long id) 
+        public async Task<IActionResult> SoftDeleteContact(long id)
         {
            
-            var success = await _contactService.DeleteContactAsync(id);
-            if (!success)
+
+            var result = await _contactService.SoftDeleteContactAsync(id);
+            if (result == null)
             {
                 return NotFound($"Contact with ID {id} not found.");
             }
 
-            return NoContent();
+            return NoContent(); // Success
         }
-
 
     }
 }

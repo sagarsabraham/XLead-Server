@@ -15,7 +15,7 @@ namespace XLead_Server.Interfaces
        
         Task<Contact?> GetByFullNameAndCustomerIdAsync(string firstName, string? lastName, long customerId);
         Task<Contact?> UpdateContactAsync(long id, ContactUpdateDto dto);
-        Task<bool> DeleteContactAsync(long id);
+        Task<Contact?> SoftDeleteContactAsync(long id);
 
 
     }

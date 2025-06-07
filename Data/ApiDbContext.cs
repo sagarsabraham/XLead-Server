@@ -28,7 +28,7 @@ namespace XLead_Server.Data
         public DbSet<StageHistory> StageHistories { get; set; }
         public DbSet<IndustrialVertical> IndustrialVerticals { get; set; }
         public DbSet<ServiceLine> ServiceLines { get; set; }
-
+        public DbSet<Note> Notes { get; set; }
 protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             // User Relationships

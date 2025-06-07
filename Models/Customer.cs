@@ -12,6 +12,7 @@
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public long? UpdatedBy { get; set; }
         public DateTime? UpdatedAt { get; set; }
+        public Boolean ? IsHidden { get; set; }
 
         // Navigation properties
         public User Creator { get; set; }

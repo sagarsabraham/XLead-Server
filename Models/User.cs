@@ -16,20 +16,20 @@ namespace XLead_Server.Models
         public long? UpdatedBy { get; set; }
         public DateTime? UpdatedAt { get; set; }
 
-        public User Creator { get; set; } // Navigation for CreatedBy
-        public User AssignedManager { get; set; } // Navigation for AssignedTo
+        public User Creator { get; set; } 
+        public User AssignedManager { get; set; }
         public ICollection<User> CreatedUsers { get; set; } = new List<User>();
         public ICollection<User> AssignedSubordinates { get; set; } = new List<User>();
         public ICollection<Account> CreatedAccounts { get; set; } = new List<Account>();
-        public ICollection<Attachment> Attachments { get; set; } = new List<Attachment>(); // Renamed to match model
-        public ICollection<Customer> Customers { get; set; } = new List<Customer>(); // CreatedCompanies
+        public ICollection<Attachment> Attachments { get; set; } = new List<Attachment>(); 
+        public ICollection<Customer> Customers { get; set; } = new List<Customer>(); 
         public ICollection<Customer> UpdatedCustomers { get; set; } = new List<Customer>();
-        public ICollection<Contact> Contacts { get; set; } = new List<Contact>(); // CreatedContacts
-        public ICollection<Deal> Deals { get; set; } = new List<Deal>(); // CreatedDeals
-        public ICollection<DealStage> DealStages { get; set; } = new List<DealStage>(); // CreatedDealStages
+        public ICollection<Contact> Contacts { get; set; } = new List<Contact>(); 
+        public ICollection<Deal> Deals { get; set; } = new List<Deal>(); 
+        
         public ICollection<DealStage> UpdatedDealStages { get; set; } = new List<DealStage>();
-        public ICollection<Privilege> Privileges { get; set; } = new List<Privilege>(); // CreatedPrivileges
-        public ICollection<StageHistory> DealStageHistory { get; set; } = new List<StageHistory>(); // CreatedStageHistories
+        public ICollection<Privilege> Privileges { get; set; } = new List<Privilege>(); 
+        public ICollection<StageHistory> DealStageHistory { get; set; } = new List<StageHistory>(); 
         public ICollection<UserPrivilege> UserPrivileges { get; set; } = new List<UserPrivilege>();
         public ICollection<UserPrivilege> CreatedUserPrivileges { get; set; } = new List<UserPrivilege>();
         public ICollection<UserPrivilege> UpdatedUserPrivileges { get; set; } = new List<UserPrivilege>();

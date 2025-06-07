@@ -52,7 +52,7 @@ namespace XLead_Server.Repositories
 
             if (existingContact == null)
             {
-                return null; // The contact to update wasn't found.
+                return null; 
             }
 
           
@@ -63,7 +63,7 @@ namespace XLead_Server.Repositories
             existingContact.PhoneNumber = dto.PhoneNumber;
             existingContact.IsActive = dto.IsActive;
 
-            // Step 3: Set the audit fields.
+           
             existingContact.UpdatedAt = DateTime.UtcNow;
           
 
@@ -73,10 +73,9 @@ namespace XLead_Server.Repositories
             }
             catch (DbUpdateException ex)
             {
-                // If there's a database-level error (like a constraint violation),
-                // this will catch it and provide a more specific message.
+
                 Console.WriteLine(ex.ToString());
-                throw; // Re-throw the exception to be caught by the controller.
+                throw;
             }
 
             return existingContact;
@@ -87,13 +86,13 @@ namespace XLead_Server.Repositories
             var contactToDelete = await _context.Contacts.FindAsync(id);
             if (contactToDelete == null)
             {
-                return null; // Not found
+                return null; 
             }
 
             contactToDelete.IsHidden = true;
             contactToDelete.IsActive = false; 
             contactToDelete.UpdatedAt = DateTime.UtcNow;
-            //contactToDelete.UpdatedBy = updatedBy;
+            
 
             await _context.SaveChangesAsync();
             return contactToDelete;

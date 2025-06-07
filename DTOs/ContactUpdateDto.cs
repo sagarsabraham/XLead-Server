@@ -12,6 +12,5 @@ namespace XLead_Server.DTOs
         public bool IsActive { get; set; }
 
       
-        //public int UpdatedBy { get; set; }
     }
 }

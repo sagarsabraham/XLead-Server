@@ -138,12 +138,11 @@ namespace XLead_Server.Controllers
             }
             catch (Exception ex)
             {
-                // Kept the detailed error for your debugging
+               
                 return StatusCode(500, new { message = "An internal error occurred while updating the contact.", details = ex.ToString() });
             }
         }
-        // XLead_Server/Controllers/CustomerContactController.cs
-
+       
         [HttpDelete("customer/{id}")]
         public async Task<IActionResult> SoftDeleteCustomer(long id)
         {
@@ -155,7 +154,7 @@ namespace XLead_Server.Controllers
                 return NotFound($"Customer with ID {id} not found.");
             }
 
-            return NoContent(); // Success, no content to return
+            return NoContent(); 
         }
 
         [HttpDelete("contact/{id}")]

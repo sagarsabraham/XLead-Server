@@ -1,4 +1,4 @@
-﻿// XLead_Server/DTOs/CustomerUpdateDto.cs
+﻿
 namespace XLead_Server.DTOs
 {
     public class CustomerUpdateDto

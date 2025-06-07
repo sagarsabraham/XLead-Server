@@ -31,10 +31,9 @@ builder.Services.AddDbContext<ApiDbContext>(option =>
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-
+builder.Services.AddScoped<INoteRepository, NoteRepository>();
 builder.Services.AddScoped<IAttachmentRepository, AttachmentRepository>();
 builder.Services.AddScoped<IUserPrivilegeRepository, UserPrivilegeRepository>();
-builder.Services.AddScoped<IStageHistoryRepository, StageHistoryRepository>();
 builder.Services.AddScoped<ICustomerRepository, CustomerRepository>();
 builder.Services.AddScoped<IContactRepository, ContactRepository>();
 builder.Services.AddScoped<IDealRepository, DealRepository>();
@@ -47,7 +46,7 @@ builder.Services.AddScoped<IAccountRepository, AccountRepository>();
 builder.Services.AddScoped<IDomainRepository, DomainRepository>();
 builder.Services.AddScoped<IDealStageRepository, DealStageRepository>();
 builder.Services.AddScoped<IRegionRepository, RegionRepository>();
-builder.Services.AddAutoMapper(typeof(Program)); // Scans current assembly for profiles
+builder.Services.AddAutoMapper(typeof(Program));
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 
 

@@ -32,7 +32,7 @@ namespace XLead_Server.Data
         public DbSet<ServiceLine> ServiceLines { get; set; }
         public DbSet<Note> Notes { get; set; }
 
-protected override void OnModelCreating(ModelBuilder modelBuilder)
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             // User Relationships
             modelBuilder.Entity<User>(entity =>

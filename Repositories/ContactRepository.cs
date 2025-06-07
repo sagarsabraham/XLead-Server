@@ -1,5 +1,4 @@
-﻿// XLead_Server/Repositories/ContactRepository.cs
-using AutoMapper;
+﻿using AutoMapper;
 using Microsoft.EntityFrameworkCore;
 using XLead_Server.Data;
 using XLead_Server.DTOs;
@@ -44,5 +43,61 @@ namespace XLead_Server.Repositories
                                          (lastName == null || c.LastName == lastName) &&
                                          c.CustomerId == customerId);
         }
+
+        public async Task<Contact?> UpdateContactAsync(long id, ContactUpdateDto dto)
+        {
+            var existingContact = await _context.Contacts.FindAsync(id);
+
+            if (existingContact == null)
+            {
+                return null;
+            }
+
+
+            existingContact.FirstName = dto.FirstName;
+            existingContact.LastName = dto.LastName;
+            existingContact.Designation = dto.Designation;
+            existingContact.Email = dto.Email;
+            existingContact.PhoneNumber = dto.PhoneNumber;
+            existingContact.IsActive = dto.IsActive;
+
+
+            existingContact.UpdatedAt = DateTime.UtcNow;
+
+
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateException ex)
+            {
+
+                Console.WriteLine(ex.ToString());
+                throw;
+            }
+
+            return existingContact;
+        }
+
+        public async Task<Contact?> SoftDeleteContactAsync(long id)
+        {
+            var contactToDelete = await _context.Contacts.FindAsync(id);
+            if (contactToDelete == null)
+            {
+                return null;
+            }
+
+            contactToDelete.IsHidden = true;
+            contactToDelete.IsActive = false;
+            contactToDelete.UpdatedAt = DateTime.UtcNow;
+
+
+            await _context.SaveChangesAsync();
+            return contactToDelete;
+        }
+
     }
+
+
 }
+

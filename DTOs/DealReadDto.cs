@@ -8,7 +8,6 @@ namespace XLead_Server.DTOs
         public long Id { get; set; }
         public string DealName { get; set; }
         public decimal DealAmount { get; set; }
-        //public string SalespersonName { get; set; }
         public long? AccountId { get; set; }
         public string? AccountName { get; set; }
         public long? RegionId { get; set; }

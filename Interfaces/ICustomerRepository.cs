@@ -1,8 +1,7 @@
-﻿// XLead_Server/Interfaces/ICompanyRepository.cs
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Threading.Tasks;
-using XLead_Server.DTOs; // For CompanyReadDto, CompanyCreateDto
-using XLead_Server.Models; // For Company model
+using XLead_Server.DTOs;
+using XLead_Server.Models;
 
 namespace XLead_Server.Interfaces
 {
@@ -12,5 +11,8 @@ namespace XLead_Server.Interfaces
         Task<Customer?> GetByNameAsync(string customerName);
         Task<Dictionary<string, List<string>>> GetCustomerContactMapAsync();
         Task<IEnumerable<CustomerReadDto>> GetAllCustomersAsync();
+        Task<Customer?> UpdateCustomerAsync(long id, CustomerUpdateDto dto);
+
+        Task<Customer?> SoftDeleteCustomerAsync(long id);
     }
 }   

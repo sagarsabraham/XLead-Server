@@ -1,5 +1,4 @@
-﻿// XLead_Server/DTOs/CompanyCreateDto.cs
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 
 namespace XLead_Server.DTOs
 {

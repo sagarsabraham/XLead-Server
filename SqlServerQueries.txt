@@ -90,67 +90,76 @@ INSERT INTO Privileges (PrivilegeName, CreatedBy, CreatedAt)
 VALUES
 ('Overview', 1, GETUTCDATE()), 
 ('PipelineDetailAccess', 1, GETUTCDATE()),
-( 'CreateCustomer', 2, GETUTCDATE()),
-( 'CreateContact', 2, GETUTCDATE());
+('CreateCustomer', 1, GETUTCDATE()),
+('CreateContact', 1, GETUTCDATE()),
+('Dashboard Overview',1,GETUTCDATE()),
+('ViewOwnDashboard',1,GETUTCDATE()),
+('CreateDeal', 1, GETUTCDATE()),
+('StageUpdate', 1, GETUTCDATE());
+
 
 INSERT INTO UsersPrivileges (UserId, PrivilegeId, CreatedBy, CreatedAt)
 VALUES 
-(4, 1, 1, GETUTCDATE()),
+(3, 1, 1, GETUTCDATE()),
 (4, 2, 1, GETUTCDATE()),
 (4, 3, 1, GETUTCDATE()),
-(4, 4, 1, GETUTCDATE());
+(4, 4, 1, GETUTCDATE()),
+(3, 5, 2, GETUTCDATE()),
+(4, 6, 2, GETUTCDATE()),
+(4, 7, 2, GETUTCDATE()),
+(4, 8, 2, GETUTCDATE());
 
 INSERT INTO Regions (RegionName,CreatedBy,CreatedAt)
 VALUES
-('Banglore',1,GETUTCDATE()),
-('Kochi',1,GETUTCDATE()),
-('Japan',1,GETUTCDATE()),
-('Trivandram',1,GETUTCDATE());
+('Banglore', 1, GETUTCDATE()),
+('Kochi', 1, GETUTCDATE()),
+('Japan', 1, GETUTCDATE()),
+('Trivandram', 1, GETUTCDATE());
 
 INSERT INTO IndustrialVerticals (IndustryName,CreatedBy,CreatedAt) 
 VALUES 
-('Retail & E-Commerce',1,GETUTCDATE()),
-('Insurance',1,GETUTCDATE());
+('Retail & E-Commerce', 1, GETUTCDATE()),
+('Insurance', 1, GETUTCDATE());
 
 INSERT INTO Countries (CountryName,CreatedBy,CreatedAt) 
 VALUES
-('UK',1,GETUTCDATE()),
-('USA',1,GETUTCDATE()),
-('India',1,GETUTCDATE()),
-('Japan',1,GETUTCDATE());
+('UK', 1, GETUTCDATE()),
+('USA', 1, GETUTCDATE()),
+('India', 1, GETUTCDATE()),
+('Japan', 1, GETUTCDATE());
 
 INSERT INTO Accounts (AccountName,CreatedBy,CreatedAt) 
 VALUES 
-('Acme Corporation',1,GETUTCDATE());
+('Acme Corporation', 1, GETUTCDATE());
 
 INSERT INTO Accounts (AccountName,CreatedBy,CreatedAt) 
 VALUES 
-('Knitt',1,GETUTCDATE());
+('Knitt', 1, GETUTCDATE());
 
 INSERT INTO Domains (DomainName,CreatedBy,CreatedAt) 
 VALUES 
-('Edtech',1,GETUTCDATE()),
-('Automobile',1,GETUTCDATE());
+('Edtech', 1, GETUTCDATE()),
+('Automobile', 1, GETUTCDATE());
 
 INSERT INTO RevenueTypes (RevenueTypeName,CreatedBy,CreatedAt) 
 VALUES 
-('T and M',1,GETUTCDATE()),
-('Fixed Fee',1,GETUTCDATE());
+('T and M', 1, GETUTCDATE()),
+('Fixed Fee', 1, GETUTCDATE());
 
 INSERT INTO DUs (DUName,CreatedBy,CreatedAt) 
 VALUES 
-('DU-1',1,GETUTCDATE()),
-('DU-2',1,GETUTCDATE()),
-('DU-3',1,GETUTCDATE()),
-('DU-4',1,GETUTCDATE()),
-('DU-5',1,GETUTCDATE()),
-('DU-6',1,GETUTCDATE());
+('DU-1', 1, GETUTCDATE()),
+('DU-2', 1, GETUTCDATE()),
+('DU-3', 1, GETUTCDATE()),
+('DU-4', 1, GETUTCDATE()),
+('DU-5', 1, GETUTCDATE()),
+('DU-6', 1, GETUTCDATE());
 
 INSERT INTO ServiceLines (ServiceName,CreatedBy,CreatedAt)
 VALUES
-('Strategy & Consulting',1,GETUTCDATE()),
-('Quality Engineering',1,GETUTCDATE()),
-('Experience Design',1,GETUTCDATE());
+('Strategy & Consulting', 1, GETUTCDATE()),
+('Quality Engineering', 1, GETUTCDATE()),
+('Experience Design', 1, GETUTCDATE());
 
 INSERT INTO DealStages (StageName, DisplayName, CreatedBy,CreatedAt,[Order])
 VALUES

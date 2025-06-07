@@ -1,9 +1,10 @@
 ﻿namespace XLead_Server.DTOs
 {
-    public class StageHistoryCreateDto
+    public class AttachmentCreateDto
     {
+        public string FileName { get; set; }
+        public string S3UploadName { get; set; }
         public long DealId { get; set; }
-        public string StageName { get; set; } = null!;
         public long CreatedBy { get; set; }
     }
 }

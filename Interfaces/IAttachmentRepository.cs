@@ -5,8 +5,9 @@ namespace XLead_Server.Interfaces
 {
     public interface IAttachmentRepository
     {
-        Task<Attachment> AddAsync(Attachment attachment);
-        Task<Attachment> GetByIdAsync(int id);
-        Task DeleteAsync(int id);
+        Task AddAsync(Attachment attachment);
+        void Update(Attachment attachment);
+        Task SaveAsync();
+        Task<IEnumerable<Attachment>> GetByDealIdAsync(long dealId);
     }
 }

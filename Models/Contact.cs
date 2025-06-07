@@ -16,7 +16,7 @@
         public DateTime? UpdatedAt { get; set; }
         public Customer customer { get; set; }
         public User Creator { get; set; }
-
+        public bool? IsHidden { get; set; }
         public ICollection<Deal> Deals { get; set; } = new List<Deal>();
     }
 }

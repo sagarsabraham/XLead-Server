@@ -60,5 +60,8 @@ namespace XLead_Server.DTOs
 
         [Required]
         public long CreatedBy { get; set; }
+      
+        public Dictionary<string, object>? CustomFields { get; set; }
+
     }
 }

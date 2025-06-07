@@ -1,6 +1,8 @@
 ﻿using System.Diagnostics.Metrics;
 using System.Net.Mail;
+using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 using XLead_Server.Interfaces;
 using XLead_Server.Models;
 using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
@@ -305,6 +307,20 @@ protected override void OnModelCreating(ModelBuilder modelBuilder)
                 .HasForeignKey(d => d.RevenueTypeId)
                 .OnDelete(DeleteBehavior.Restrict);
             });
+
+            modelBuilder.Entity<Deal>()
+        .Property(d => d.CustomFields)
+        .HasConversion(
+           
+            v => JsonSerializer.Serialize(v, (JsonSerializerOptions)null),
+           
+            v => JsonSerializer.Deserialize<Dictionary<string, object>>(v, (JsonSerializerOptions)null),
+         
+            new ValueComparer<Dictionary<string, object>>(
+                (c1, c2) => c1.SequenceEqual(c2),
+                c => c.Aggregate(0, (a, v) => HashCode.Combine(a, v.Key.GetHashCode(), v.Value.GetHashCode()))
+            )
+        );
         }
     }
 }

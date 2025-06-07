@@ -68,41 +68,82 @@ namespace XLead_Server.Repositories
             );
         }
 
-        public async Task<Customer?> UpdateCustomerAsync(long id, CustomerUpdateDto dto)
+   
+
+public async Task<Customer?> UpdateCustomerAsync(long id, CustomerUpdateDto dto)
+    {
+       
+        var existingCustomer = await _context.Customers
+            .Include(c => c.Contacts)
+            .FirstOrDefaultAsync(c => c.Id == id);
+
+        if (existingCustomer == null)
         {
-            var existingCustomer = await _context.Customers.FindAsync(id);
-            if (existingCustomer == null)
-            {
-                return null;
-            }
-
-            
-            _mapper.Map(dto, existingCustomer);
-
-            
-            existingCustomer.UpdatedAt = DateTime.UtcNow;
-           
-
-            await _context.SaveChangesAsync();
-            return existingCustomer;
+            return null;
         }
 
+        bool wasActive = existingCustomer.IsActive;
 
-        public async Task<Customer?> SoftDeleteCustomerAsync(long id)
+        _mapper.Map(dto, existingCustomer);
+
+     
+        existingCustomer.UpdatedAt = DateTime.UtcNow;
+       
+
+       
+        if (wasActive != existingCustomer.IsActive)
         {
-            var customerToDelete = await _context.Customers.FindAsync(id);
-            if (customerToDelete == null)
+           
+            bool newStatus = existingCustomer.IsActive;
+
+            foreach (var contact in existingCustomer.Contacts)
             {
-                return null; // Not found
+               
+                contact.IsActive = newStatus;
+
+                
+                contact.UpdatedAt = DateTime.UtcNow;
+               
+            }
+        }
+
+       
+        await _context.SaveChangesAsync();
+
+        return existingCustomer;
+    }
+
+    public async Task<Customer?> SoftDeleteCustomerAsync(long id)
+        {
+         
+            var customerToSoftDelete = await _context.Customers
+                .Include(c => c.Contacts)
+                .FirstOrDefaultAsync(c => c.Id == id);
+
+            if (customerToSoftDelete == null)
+            {
+                return null; 
             }
 
-            customerToDelete.IsHidden = true;
-            customerToDelete.IsActive = false; 
-            customerToDelete.UpdatedAt = DateTime.UtcNow;
-            //customerToDelete.UpdatedBy = updatedBy;
+           
+            customerToSoftDelete.IsHidden = true;
+            customerToSoftDelete.IsActive = false;
+            customerToSoftDelete.UpdatedAt = DateTime.UtcNow;
+           
 
+        
+            foreach (var contact in customerToSoftDelete.Contacts)
+            {
+                contact.IsHidden = true;
+                contact.IsActive = false;
+                contact.UpdatedAt = DateTime.UtcNow;
+               
+            }
+
+          
             await _context.SaveChangesAsync();
-            return customerToDelete;
+
+            return customerToSoftDelete;
         }
 
     }

@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using XLead_Server.Controllers;
 using XLead_Server.Interfaces;
+using XLead_Server.Models;
 using XLead_Server.Repositories;
 
 namespace XLead_Server.Controllers
@@ -16,12 +17,14 @@ namespace XLead_Server.Controllers
             _dealStageRepository = dealStageRepository;
         }
         [HttpGet]
-        public async Task<IActionResult> Get()
+        [ProducesResponseType(typeof(IEnumerable<DealStage>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<ActionResult<IEnumerable<DealStage>>> GetAllDealStagesAsync()
         {
             var dealStages = await _dealStageRepository.GetAllDealStages();
             if (dealStages == null)
             {
-                return NotFound();
+                return NotFound("Deal stage data is currently unavailable or no deal stages found.");
             }
             return Ok(dealStages);
         }

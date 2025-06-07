@@ -3,17 +3,20 @@ using System.ComponentModel.DataAnnotations;
 
 namespace XLead_Server.DTOs
 {
-    public class CompanyCreateDto
+    public class CustomerCreateDto
     {
         [Required]
         [StringLength(255, MinimumLength = 1)]
-        public string CompanyName { get; set; }
+        public string CustomerName { get; set; }
 
         [StringLength(2083)]
         public string? Website { get; set; }
 
+        [Required] 
         [StringLength(50)]
-        public string? CompanyPhoneNumber { get; set; }
+        public string CustomerPhoneNumber { get; set; } 
+
+        public long? IndustryVerticalId { get; set; }
 
         [Required]
         public long CreatedBy { get; set; }

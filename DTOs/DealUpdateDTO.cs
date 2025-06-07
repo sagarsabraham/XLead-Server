@@ -3,5 +3,6 @@
     public class DealUpdateDTO
     {
         public string StageName { get; set; }
+        public long PerformedByUserId { get; set; }
     }
 }

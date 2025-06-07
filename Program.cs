@@ -32,17 +32,30 @@ builder.Services.AddDbContext<ApiDbContext>(option =>
 //builder.Services.AddScoped<IAttachmentRepository, AttachmentRepository>();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-builder.Services.AddScoped<ICompanyRepository, CompanyRepository>();
+builder.Services.AddScoped<IUserPrivilegeRepository, UserPrivilegeRepository>();
+builder.Services.AddScoped<IStageHistoryRepository, StageHistoryRepository>();
+builder.Services.AddScoped<ICustomerRepository, CustomerRepository>();
 builder.Services.AddScoped<IContactRepository, ContactRepository>();
 builder.Services.AddScoped<IDealRepository, DealRepository>();
 builder.Services.AddScoped<ICountryRepository, CountryRepository>();
 builder.Services.AddScoped<IRevenueType, RevenueTypeRepository>();
+builder.Services.AddScoped<IServiceline,ServicelineRepository>();
+builder.Services.AddScoped<IIndustryVertical, IndustryVerticalRepository>();
 builder.Services.AddScoped<IDuRepository, DuRepository>();
 builder.Services.AddScoped<IAccountRepository, AccountRepository>();
 builder.Services.AddScoped<IDomainRepository, DomainRepository>();
 builder.Services.AddScoped<IDealStageRepository, DealStageRepository>();
 builder.Services.AddScoped<IRegionRepository, RegionRepository>();
 builder.Services.AddAutoMapper(typeof(Program)); // Scans current assembly for profiles
+builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
+// Ensure logging is configured
+builder.Services.AddLogging(logging =>
+{
+    logging.ClearProviders();
+    logging.AddConsole();
+    logging.AddDebug();
+});
+
 
 var app = builder.Build();
 

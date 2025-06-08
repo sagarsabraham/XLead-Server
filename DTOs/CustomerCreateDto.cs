@@ -1,4 +1,4 @@
-﻿// XLead_Server/DTOs/CompanyCreateDto.cs
+﻿
 using System.ComponentModel.DataAnnotations;
 
 namespace XLead_Server.DTOs
@@ -14,6 +14,8 @@ namespace XLead_Server.DTOs
 
         [StringLength(50)]
         public string? CustomerPhoneNumber { get; set; }
+
+        public long? IndustryVerticalId { get; set; }
 
         [Required]
         public long CreatedBy { get; set; }

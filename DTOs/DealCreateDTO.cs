@@ -1,5 +1,4 @@
-﻿// XLead_Server/DTOs/DealCreateDto.cs
-using System;
+﻿using System;
 using System.ComponentModel.DataAnnotations;
 
 namespace XLead_Server.DTOs
@@ -8,7 +7,7 @@ namespace XLead_Server.DTOs
     {
         [Required(ErrorMessage = "Deal Title/Name is required.")]
         [StringLength(255)]
-        public string Title { get; set; } // Will map to Deal.DealName
+        public string Title { get; set; }
 
         [Range(0, double.MaxValue, ErrorMessage = "Amount must be a non-negative value.")]
         public decimal Amount { get; set; }
@@ -19,28 +18,33 @@ namespace XLead_Server.DTOs
         [Required(ErrorMessage = "Contact Full Name is required.")]
         public string ContactFullName { get; set; }
 
-        //[Required(ErrorMessage = "Salesperson Name is required.")]
-        //public string SalespersonName { get; set; }
+        [EmailAddress(ErrorMessage = "Invalid email address.")]
+        public string? ContactEmail { get; set; }
 
-        // Nullable Foreign Keys
-        public int? AccountId { get; set; }
+        public string? ContactPhoneNumber { get; set; }
+
+        public string? ContactDesignation { get; set; }
+
+        public long? ServiceId { get; set; }
+
+        public long? AccountId { get; set; }
 
         [Required(ErrorMessage = "Region is required.")]
-        public int? RegionId { get; set; }
+        public long? RegionId { get; set; }
 
-        public int? DomainId { get; set; }
+        public long? DomainId { get; set; }
 
         [Required(ErrorMessage = "Deal Stage is required.")]
         public long? DealStageId { get; set; }
 
         [Required(ErrorMessage = "Revenue Type is required.")]
-        public int? RevenueTypeId { get; set; }
+        public long? RevenueTypeId { get; set; }
 
         [Required(ErrorMessage = "DU (Department) is required.")]
-        public int? DuId { get; set; }
+        public long? DuId { get; set; }
 
         [Required(ErrorMessage = "Country is required.")]
-        public int? CountryId { get; set; }
+        public long? CountryId { get; set; }
 
         [Required(ErrorMessage = "Description is required.")]
         public string Description { get; set; }
@@ -55,6 +59,6 @@ namespace XLead_Server.DTOs
         public DateTime? ClosingDate { get; set; }
 
         [Required]
-        public long CreatedBy { get; set; } // User ID of the creator
+        public long CreatedBy { get; set; }
     }
 }

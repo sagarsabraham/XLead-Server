@@ -21,11 +21,12 @@ namespace XLead_Server.Models
         public long ContactId { get; set; }
         public DateTime StartingDate { get; set; }
         public DateTime ClosingDate { get; set; }
+        public bool? IsHidden { get; set; }
         public long CreatedBy { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public long? UpdatedBy { get; set; }
         public DateTime? UpdatedAt { get; set; }
-        public Boolean? IsHidden { get; set; }
+      
         //public string? CustomFieldsJson { get; set; }
         public User Creator { get; set; }
         public Account account { get; set; }
@@ -40,5 +41,7 @@ namespace XLead_Server.Models
         public ICollection<Note> Notes { get; set; }= new List<Note>();
         public ICollection<StageHistory> DealStageHistory { get; set; } = new List<StageHistory>();
         public ICollection<Attachment> Attachments { get; set; } = new List<Attachment>();
+   
+
     }
 }

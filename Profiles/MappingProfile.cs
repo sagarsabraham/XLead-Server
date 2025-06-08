@@ -10,13 +10,17 @@ namespace XLead_Server.Profiles
         {
             CreateMap<Privilege, PrivilegeReadDto>();
             CreateMap<ContactUpdateDto, Contact>()
-           .ForMember(dest => dest.Id, opt => opt.Ignore())
-           .ForMember(dest => dest.CustomerId, opt => opt.Ignore())
-           .ForMember(dest => dest.CreatedBy, opt => opt.Ignore())
+           .ForMember(dest => dest.Id, opt => opt.Ignore()) 
+           .ForMember(dest => dest.CustomerId, opt => opt.Ignore()) 
+           .ForMember(dest => dest.CreatedBy, opt => opt.Ignore()) 
            .ForMember(dest => dest.CreatedAt, opt => opt.Ignore());
 
+            CreateMap<CustomerUpdateDto, Customer>()
+                .ForMember(dest => dest.Id, opt => opt.Ignore())
+                .ForMember(dest => dest.CreatedBy, opt => opt.Ignore())
+                .ForMember(dest => dest.CreatedAt, opt => opt.Ignore());
 
-            CreateMap<AttachmentCreateDto, Attachment>();
+
 
             CreateMap<Attachment, AttachmentReadDto>();
             CreateMap<CustomerUpdateDto, Customer>()
@@ -81,6 +85,8 @@ namespace XLead_Server.Profiles
                 .ForMember(dest => dest.ClosingDate, opt => opt.MapFrom(src => src.ClosingDate))
                 .ForMember(dest => dest.CreatedBy, opt => opt.MapFrom(src => src.CreatedBy))
                 .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => src.CreatedAt));
+           
+
         }
 
 

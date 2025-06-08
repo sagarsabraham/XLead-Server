@@ -1,4 +1,5 @@
-﻿namespace XLead_Server.DTOs
+﻿
+namespace XLead_Server.DTOs
 {
     public class CustomerUpdateDto
     {
@@ -7,5 +8,6 @@
         public string? Website { get; set; }
         public int? IndustryVerticalId { get; set; }
         public bool IsActive { get; set; }
+      
     }
 }

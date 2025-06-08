@@ -1,4 +1,4 @@
-﻿// XLead_Server/Controllers/CustomerContactController.cs
+﻿
 using AutoMapper;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -98,118 +98,75 @@ namespace XLead_Server.Controllers
             return Ok(contacts);
         }
         [HttpPut("customer/{id}")]
-
         public async Task<IActionResult> UpdateCustomer(int id, [FromBody] CustomerUpdateDto dto)
-
         {
-
+           
             try
-
             {
-
                 var updatedCustomer = await _customerService.UpdateCustomerAsync(id, dto);
-
                 if (updatedCustomer == null)
-
                 {
-
                     return NotFound($"Customer with ID {id} not found.");
-
                 }
 
                 var resultDto = _mapper.Map<CustomerReadDto>(updatedCustomer);
-
                 return Ok(resultDto);
-
             }
-
             catch (Exception ex)
-
             {
-
                 return StatusCode(500, new { message = "An internal error occurred while updating the customer.", details = ex.ToString() });
-
             }
-
         }
 
 
         [HttpPut("contact/{id}")]
-
         public async Task<IActionResult> UpdateContact(long id, [FromBody] ContactUpdateDto dto)
-
         {
-
+           
             try
-
             {
-
                 var updatedContact = await _contactService.UpdateContactAsync(id, dto);
-
                 if (updatedContact == null)
-
                 {
-
                     return NotFound($"Contact with ID {id} not found.");
-
                 }
 
                 var resultDto = _mapper.Map<ContactReadDto>(updatedContact);
-
                 return Ok(resultDto);
-
             }
-
             catch (Exception ex)
-
             {
-
+               
                 return StatusCode(500, new { message = "An internal error occurred while updating the contact.", details = ex.ToString() });
-
             }
-
         }
-
+       
         [HttpDelete("customer/{id}")]
-
         public async Task<IActionResult> SoftDeleteCustomer(long id)
-
         {
-
+            
 
             var result = await _customerService.SoftDeleteCustomerAsync(id);
-
             if (result == null)
-
             {
-
                 return NotFound($"Customer with ID {id} not found.");
-
             }
 
-            return NoContent();
-
+            return NoContent(); 
         }
 
         [HttpDelete("contact/{id}")]
-
         public async Task<IActionResult> SoftDeleteContact(long id)
-
         {
-
+           
 
             var result = await _contactService.SoftDeleteContactAsync(id);
-
             if (result == null)
-
             {
-
                 return NotFound($"Contact with ID {id} not found.");
-
             }
 
-            return NoContent(); // Success
-
+            return NoContent(); 
         }
 
     }

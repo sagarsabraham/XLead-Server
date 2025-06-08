@@ -1,6 +1,8 @@
 ﻿using System.Diagnostics.Metrics;
 using System.Net.Mail;
+using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 using XLead_Server.Interfaces;
 using XLead_Server.Models;
 using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
@@ -329,6 +331,8 @@ namespace XLead_Server.Data
                 .HasForeignKey(d => d.RevenueTypeId)
                 .OnDelete(DeleteBehavior.Restrict);
             });
+
+   
         }
     }
 }

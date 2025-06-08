@@ -10,13 +10,14 @@
         public string Designation { get; set; }
         public long CustomerId { get; set; }
         public bool IsActive { get; set; }
+        public bool? IsHidden { get; set; }
         public long CreatedBy { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public long? UpdatedBy { get; set; }
         public DateTime? UpdatedAt { get; set; }
         public Customer customer { get; set; }
         public User Creator { get; set; }
-        public Boolean? IsHidden { get; set; }
+       
         public ICollection<Deal> Deals { get; set; } = new List<Deal>();
     }
 }

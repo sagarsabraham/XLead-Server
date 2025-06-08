@@ -10,8 +10,12 @@ namespace XLead_Server.Interfaces
     {
         Task<Contact> AddContactAsync(ContactCreateDto dto);
         Task<IEnumerable<ContactReadDto>> GetAllContactsAsync();
+
+       
         Task<Contact?> GetByFullNameAndCustomerIdAsync(string firstName, string? lastName, long customerId);
         Task<Contact?> UpdateContactAsync(long id, ContactUpdateDto dto);
         Task<Contact?> SoftDeleteContactAsync(long id);
+
+
     }
 }

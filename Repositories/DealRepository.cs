@@ -442,10 +442,6 @@ namespace XLead_Server.Repositories
                            .ToListAsync();
             return topCustomersData;
         }
-
-
-
-
         private double CalculatePercentageChange(double currentValue, double previousValue)
         {
             if (previousValue == 0)

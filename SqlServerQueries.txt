@@ -95,7 +95,7 @@ VALUES
 ('Dashboard Overview',1,GETUTCDATE()),
 ('ViewOwnDashboard',1,GETUTCDATE()),
 ('CreateDeal', 1, GETUTCDATE()),
-('StageUpdate', 1, GETUTCDATE());
+('UpdateDealStage', 1, GETUTCDATE());
 
 
 INSERT INTO UsersPrivileges (UserId, PrivilegeId, CreatedBy, CreatedAt)

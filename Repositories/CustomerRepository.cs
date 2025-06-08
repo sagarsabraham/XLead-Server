@@ -55,7 +55,7 @@ namespace XLead_Server.Repositories
                 .FirstOrDefaultAsync(c => c.CustomerName == customerName);
         }
 
-        public async Task<Dictionary<string, List<string>>> GetCustomerContactMapAsync()
+        public async Task<Dictionary<string, CustomerContactMapDto>> GetCustomerContactMapAsync()
         {
             var customers = await _context.Customers
                 .Include(c => c.Contacts)
@@ -63,7 +63,12 @@ namespace XLead_Server.Repositories
 
             return customers.ToDictionary(
                 c => c.CustomerName,
-                c => c.Contacts.Select(ct => $"{ct.FirstName} {ct.LastName}".Trim()).ToList()
+                c => new CustomerContactMapDto
+                {
+                    IsActive = c.IsActive,
+                    IsHidden = c.IsHidden,
+                    Contacts = c.Contacts.Select(ct => $"{ct.FirstName} {ct.LastName}".Trim()).ToList()
+                }
             );
         }
         public async Task<Customer?> UpdateCustomerAsync(long id, CustomerUpdateDto dto)

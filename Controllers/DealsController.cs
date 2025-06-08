@@ -7,7 +7,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using XLead_Server.DTOs;
 using XLead_Server.Interfaces;
-using System.Collections.Generic; 
+using System.Collections.Generic;
 
 namespace XLead_Server.Controllers
 {
@@ -339,35 +339,21 @@ namespace XLead_Server.Controllers
         [HttpPut("{id}/stage")]
 
         [ProducesResponseType(typeof(DealReadDto), 200)]
-
         [ProducesResponseType(403)]
-
         [ProducesResponseType(404)]
-
         public async Task<IActionResult> UpdateDealStage(long id, [FromBody] DealUpdateDto dto)
-
         {
-
             if (!dto.UpdatedBy.HasValue)
-
             {
-
                 return BadRequest("UpdatedBy is required");
-
             }
-
-
 
             var privileges = await _userPrivilegeRepository.GetPrivilegesByUserIdAsync(dto.UpdatedBy.Value);
 
             if (!privileges.Any(p => p.PrivilegeName == "UpdateDealStage" || p.PrivilegeName == "PipelineDetailAccess"))
-
             {
-
                 _logger.LogWarning($"User {dto.UpdatedBy.Value} lacks UpdateDealStage privilege");
-
                 return Forbid("User lacks UpdateDealStage privilege");
-
             }
 
             _logger.LogInformation($"User {dto.UpdatedBy.Value} updating stage for deal {id}");
@@ -375,19 +361,10 @@ namespace XLead_Server.Controllers
             var updatedDeal = await _dealRepository.UpdateDealStageAsync(id, dto);
 
             if (updatedDeal == null)
-
             {
-
                 return NotFound($"Deal with ID {id} not found.");
-
             }
-
             return Ok(updatedDeal);
-
         }
-
-
-
     }
 }
-

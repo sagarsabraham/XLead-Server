@@ -26,6 +26,9 @@ namespace XLead_Server.DTOs
         public string? StageName { get; set; }
         public long ContactId { get; set; }
         public string? ContactName { get; set; }
+        public long? ServiceId { get; set; }
+        public string? ServiceName { get; set; }
+        public bool IsHiddern { get; set; }
         public DateTime? StartingDate { get; set; }
         public DateTime? ClosingDate { get; set; }
         public long CreatedBy { get; set; }

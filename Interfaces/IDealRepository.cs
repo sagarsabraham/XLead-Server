@@ -12,7 +12,8 @@ namespace XLead_Server.Interfaces
         Task<IEnumerable<DealReadDto>> GetAllDealsAsync();
         Task<DealReadDto> UpdateDealStageAsync(long id, DealUpdateDto dealUpdateDto);
         Task<IEnumerable<DealReadDto>> GetDealsByCreatorIdAsync(long creatorId);
-
+        Task<DealReadDto?> UpdateDealAsync(long id, DealEditDto dto);
+        Task<int> GetStageIdByNameAsync(string stageName);
         Task<IEnumerable<DealManagerOverviewDto>> GetDealsForManagerAsync(long managerUserId);
         Task<IEnumerable<ManagerStageCountDto>> GetStageCountsForManagerAsync(long managerUserId);
         Task<DashboardMetricsDto> GetDashboardMetricsAsync(long requestingUserId);

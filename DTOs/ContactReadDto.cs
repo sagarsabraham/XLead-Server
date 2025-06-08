@@ -7,8 +7,8 @@
         public string? LastName { get; set; }
         public string Email { get; set; }
         public string? PhoneNumber { get; set; }
-        public string? Designation { get; set; } // Added to match Contact model
+        public string? Designation { get; set; }
         public long CustomerId { get; set; }
-        public bool IsActive { get; set; } // Added to reflect Contact model
+        public bool IsActive { get; set; }
     }
 }

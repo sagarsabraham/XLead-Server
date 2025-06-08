@@ -10,7 +10,7 @@ namespace XLead_Server.DTOs
 
         [StringLength(2083)]
         public string? Website { get; set; }
-
+        [Required]
         [StringLength(50)]
         public string? CustomerPhoneNumber { get; set; }
 

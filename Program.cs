@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.FileProviders;
 using XLead_Server.Data;
 using XLead_Server.Interfaces;
 using XLead_Server.Repositories;
@@ -49,6 +50,12 @@ builder.Services.AddScoped<IRegionRepository, RegionRepository>();
 builder.Services.AddAutoMapper(typeof(Program));
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 
+builder.Services.AddLogging(logging =>
+{
+    logging.ClearProviders();
+    logging.AddConsole();
+    logging.AddDebug();
+});
 
 var app = builder.Build();
 
@@ -58,6 +65,18 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
+var uploadsPath = Path.Combine(builder.Environment.ContentRootPath, "UploadedFiles");
+if (!Directory.Exists(uploadsPath))
+{
+    Directory.CreateDirectory(uploadsPath);
+}
+
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(uploadsPath),
+    RequestPath = "/UploadedFiles" // The URL path to access the files
+});
 
 app.UseCors("AllowAll");
 app.UseCors("AllowAngularApp");

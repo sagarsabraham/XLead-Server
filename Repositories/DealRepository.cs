@@ -164,7 +164,132 @@ namespace XLead_Server.Repositories
                 .Select(deal => _mapper.Map<DealReadDto>(deal))
                 .ToListAsync();
         }
+        public async Task<DealReadDto?> UpdateDealAsync(long id, DealEditDto dto)
+        {
+            var deal = await _context.Deals
+                .Include(d => d.contact)
+                .FirstOrDefaultAsync(d => d.Id == id);
 
+            if (deal == null)
+            {
+                return null;
+            }
+
+            if (!await _context.Regions.AnyAsync(r => r.Id == dto.RegionId))
+                throw new InvalidOperationException($"Region with ID {dto.RegionId} does not exist.");
+            if (!await _context.DealStages.AnyAsync(ds => ds.Id == dto.DealStageId))
+                throw new InvalidOperationException($"Deal Stage with ID {dto.DealStageId} does not exist.");
+            if (!await _context.RevenueTypes.AnyAsync(rt => rt.Id == dto.RevenueTypeId))
+                throw new InvalidOperationException($"Revenue Type with ID {dto.RevenueTypeId} does not exist.");
+            if (!await _context.DUs.AnyAsync(du => du.Id == dto.DuId))
+                throw new InvalidOperationException($"DU with ID {dto.DuId} does not exist.");
+            if (!await _context.Countries.AnyAsync(c => c.Id == dto.CountryId))
+                throw new InvalidOperationException($"Country with ID {dto.CountryId} does not exist.");
+            if (dto.ServiceId.HasValue && !await _context.ServiceLines.AnyAsync(sl => sl.Id == dto.ServiceId.Value))
+                throw new InvalidOperationException($"Service Line with ID {dto.ServiceId.Value} does not exist.");
+            if (dto.AccountId.HasValue && !await _context.Accounts.AnyAsync(a => a.Id == dto.AccountId.Value))
+                throw new InvalidOperationException($"Account with ID {dto.AccountId.Value} does not exist.");
+
+            Customer? customer;
+            try
+            {
+                customer = await _customerRepository.GetByNameAsync(dto.CustomerName);
+                if (customer == null)
+                {
+                    var customerCreateDto = new CustomerCreateDto
+                    {
+                        CustomerName = dto.CustomerName,
+                        Website = null,
+                        CustomerPhoneNumber = null,
+                        CreatedBy = deal.CreatedBy
+                    };
+                    customer = await _customerRepository.AddCustomerAsync(customerCreateDto);
+                    if (customer == null || customer.Id == 0)
+                    {
+                        throw new InvalidOperationException($"Failed to create customer: {dto.CustomerName}");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException($"Error creating customer: {ex.Message}. Inner Exception: {ex.InnerException?.ToString()}", ex);
+            }
+
+            string firstName;
+            string? lastName = null;
+            var nameParts = dto.ContactFullName.Trim().Split(new[] { ' ' }, 2, StringSplitOptions.RemoveEmptyEntries);
+
+            firstName = nameParts.Length > 0 ? nameParts[0] : "Unknown";
+            if (nameParts.Length > 1)
+            {
+                lastName = nameParts[1];
+            }
+
+            Contact? contact;
+            try
+            {
+                contact = await _contactRepository.GetByFullNameAndCustomerIdAsync(firstName, lastName, customer.Id);
+
+                if (contact == null)
+                {
+                    var contactCreateDto = new ContactCreateDto
+                    {
+                        FirstName = firstName,
+                        LastName = lastName,
+                        Email = dto.ContactEmail,
+                        PhoneNumber = dto.ContactPhoneNumber,
+                        Designation = dto.ContactDesignation,
+                        CustomerId = customer.Id,
+                        CustomerName = customer.CustomerName,
+                        CreatedBy = deal.CreatedBy
+                    };
+                    contact = await _contactRepository.AddContactAsync(contactCreateDto);
+                    if (contact == null || contact.Id == 0)
+                    {
+                        throw new InvalidOperationException($"Failed to create contact: {dto.ContactFullName}");
+                    }
+                }
+                else
+                {
+                    contact.Email = dto.ContactEmail ?? contact.Email;
+                    contact.PhoneNumber = dto.ContactPhoneNumber ?? contact.PhoneNumber;
+                    contact.Designation = dto.ContactDesignation ?? contact.Designation;
+                    _context.Contacts.Update(contact);
+                    await _context.SaveChangesAsync();
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException($"Error creating or updating contact: {ex.Message}. Inner Exception: {ex.InnerException?.ToString()}", ex);
+            }
+
+            if (contact.Id == 0)
+            {
+                throw new InvalidOperationException($"Contact '{dto.ContactFullName}' for customer '{customer.CustomerName}' has an invalid ID after creation/retrieval.");
+            }
+
+            deal.DealName = dto.Title;
+            deal.DealAmount = dto.Amount;
+            deal.AccountId = dto.AccountId ?? deal.AccountId;
+            deal.RegionId = dto.RegionId;
+            deal.DomainId = dto.DomainId ?? deal.DomainId;
+            deal.DealStageId = dto.DealStageId;
+            deal.RevenueTypeId = dto.RevenueTypeId;
+            deal.DuId = dto.DuId;
+            deal.CountryId = dto.CountryId;
+            deal.ServiceLineId = dto.ServiceId ?? deal.ServiceLineId;
+            deal.Description = dto.Description ?? deal.Description;
+            deal.Probability = dto.Probability ?? deal.Probability;
+            deal.StartingDate = dto.StartingDate ?? deal.StartingDate;
+            deal.ClosingDate = dto.ClosingDate ?? deal.ClosingDate;
+            deal.ContactId = contact.Id;
+            deal.UpdatedAt = DateTime.UtcNow;
+
+            _context.Deals.Update(deal);
+            await _context.SaveChangesAsync();
+
+            return await GetDealByIdAsync(deal.Id);
+        }
 
 
         public async Task<DealReadDto?> UpdateDealStageAsync(long id, DealUpdateDto dto)

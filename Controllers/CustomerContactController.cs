@@ -16,17 +16,19 @@ namespace XLead_Server.Controllers
         private readonly IContactRepository _contactService;
         private readonly IMapper _mapper;
         private readonly IUserPrivilegeRepository _userPrivilegeRepository;
-
+        private readonly ILogger<CustomerContactController> _logger;
         public CustomerContactController(
             ICustomerRepository customerService,
             IContactRepository contactService,
             IMapper mapper,
-            IUserPrivilegeRepository userPrivilegeRepository)
+            IUserPrivilegeRepository userPrivilegeRepository,
+            ILogger<CustomerContactController> logger)
         {
             _customerService = customerService;
             _contactService = contactService;
             _mapper = mapper;
             _userPrivilegeRepository = userPrivilegeRepository;
+            _logger = logger;
         }
 
         [HttpPost("customer")]
@@ -84,90 +86,217 @@ namespace XLead_Server.Controllers
             return Ok(map);
         }
 
-        [HttpGet("customers")]
-        public async Task<IActionResult> GetCustomers()
+      
+        [HttpGet("customers/{requestingUserId}")] 
+        public async Task<IActionResult> GetCustomers(long requestingUserId)
         {
-            var customers = await _customerService.GetAllCustomersAsync();
+            _logger.LogInformation("Attempting to get customers for requesting user ID: {RequestingUserId}", requestingUserId);
+           
+            var privileges = await _userPrivilegeRepository.GetPrivilegesByUserIdAsync(requestingUserId);
+            if (privileges == null || !privileges.Any(p => p.PrivilegeName == "ViewCustomers" || p.PrivilegeName == "ViewTeamCustomers"))
+            {
+                _logger.LogWarning("User {RequestingUserId} lacks necessary privilege to view customers.", requestingUserId);
+                return Forbid("User lacks privilege to view customers.");
+            }
+
+            var customers = await _customerService.GetAllCustomersAsync(requestingUserId);
             return Ok(customers);
         }
 
-        [HttpGet("contacts")]
-        public async Task<IActionResult> GetContacts()
+       
+        [HttpGet("contacts/{requestingUserId}")] 
+        public async Task<IActionResult> GetContacts(long requestingUserId)
         {
-            var contacts = await _contactService.GetAllContactsAsync();
+            _logger.LogInformation("Attempting to get contacts for requesting user ID: {RequestingUserId}", requestingUserId);
+           
+            var privileges = await _userPrivilegeRepository.GetPrivilegesByUserIdAsync(requestingUserId);
+            if (privileges == null || !privileges.Any(p => p.PrivilegeName == "ViewContacts" || p.PrivilegeName == "ViewTeamContacts")) 
+            {
+                _logger.LogWarning("User {RequestingUserId} lacks necessary privilege to view contacts.", requestingUserId);
+                return Forbid("User lacks privilege to view contacts.");
+            }
+
+            var contacts = await _contactService.GetAllContactsAsync(requestingUserId); 
             return Ok(contacts);
         }
+
+      
+
+      
+
         [HttpPut("customer/{id}")]
-        public async Task<IActionResult> UpdateCustomer(int id, [FromBody] CustomerUpdateDto dto)
+        public async Task<IActionResult> UpdateCustomer(long id, [FromBody] CustomerUpdateDto dto)
         {
-           
-            try
+            _logger.LogInformation("Attempting to update customer ID {CustomerId} by User ID {PerformingUserId}", id, dto.UpdatedBy);
+
+            if (dto.UpdatedBy <= 0)
             {
-                var updatedCustomer = await _customerService.UpdateCustomerAsync(id, dto);
-                if (updatedCustomer == null)
-                {
-                    return NotFound($"Customer with ID {id} not found.");
-                }
-
-                var resultDto = _mapper.Map<CustomerReadDto>(updatedCustomer);
-                return Ok(resultDto);
+                return BadRequest("Performing User ID must be specified.");
             }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { message = "An internal error occurred while updating the customer.", details = ex.ToString() });
-            }
-        }
 
-
-        [HttpPut("contact/{id}")]
-        public async Task<IActionResult> UpdateContact(long id, [FromBody] ContactUpdateDto dto)
-        {
-           
-            try
-            {
-                var updatedContact = await _contactService.UpdateContactAsync(id, dto);
-                if (updatedContact == null)
-                {
-                    return NotFound($"Contact with ID {id} not found.");
-                }
-
-                var resultDto = _mapper.Map<ContactReadDto>(updatedContact);
-                return Ok(resultDto);
-            }
-            catch (Exception ex)
-            {
-               
-                return StatusCode(500, new { message = "An internal error occurred while updating the contact.", details = ex.ToString() });
-            }
-        }
-       
-        [HttpDelete("customer/{id}")]
-        public async Task<IActionResult> SoftDeleteCustomer(long id)
-        {
-            
-
-            var result = await _customerService.SoftDeleteCustomerAsync(id);
-            if (result == null)
+            var customerToUpdate = await _customerService.GetCustomerByIdAsync(id); 
+            if (customerToUpdate == null)
             {
                 return NotFound($"Customer with ID {id} not found.");
             }
 
-            return NoContent(); 
+            
+            if (customerToUpdate.CreatedBy != dto.UpdatedBy)
+            {
+                _logger.LogWarning("User {PerformingUserId} is not the creator of customer {CustomerId} (Creator: {CreatorId}). Update forbidden.", dto.UpdatedBy, id, customerToUpdate.CreatedBy);
+                return Forbid("User is not authorized to update this customer.");
+            }
+
+            var privileges = await _userPrivilegeRepository.GetPrivilegesByUserIdAsync(dto.UpdatedBy);
+            if (!privileges.Any(p => p.PrivilegeName == "EditOwnCustomer"))
+            {
+                _logger.LogWarning("User {PerformingUserId} lacks 'EditOwnCustomer' privilege for customer ID {CustomerId}.", dto.UpdatedBy, id);
+                return Forbid("User lacks privilege to edit this customer.");
+            }
+
+            _logger.LogInformation("User {PerformingUserId} authorized to update customer {CustomerId}.", dto.UpdatedBy, id);
+            try
+            {
+             
+                var updatedCustomer = await _customerService.UpdateCustomerAsync(id, dto); 
+                var resultDto = _mapper.Map<CustomerReadDto>(updatedCustomer);
+                return Ok(resultDto);
+            }
+            catch (ArgumentException ex) 
+            {
+                return BadRequest(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating customer {CustomerId}", id);
+                return StatusCode(StatusCodes.Status500InternalServerError, "An internal error occurred while updating the customer.");
+            }
         }
 
-        [HttpDelete("contact/{id}")]
-        public async Task<IActionResult> SoftDeleteContact(long id)
+        [HttpPut("contact/{id}")]
+        public async Task<IActionResult> UpdateContact(long id, [FromBody] ContactUpdateDto dto)
         {
-           
+            _logger.LogInformation("Attempting to update contact ID {ContactId} by User ID {PerformingUserId}", id, dto.UpdatedBy);
 
-            var result = await _contactService.SoftDeleteContactAsync(id);
-            if (result == null)
+            if (dto.UpdatedBy <= 0)
+            {
+                return BadRequest("Performing User ID must be specified.");
+            }
+
+            var contactToUpdate = await _contactService.GetContactByIdAsync(id);
+            if (contactToUpdate == null)
             {
                 return NotFound($"Contact with ID {id} not found.");
             }
 
-            return NoContent(); 
+            if (contactToUpdate.CreatedBy != dto.UpdatedBy)
+            {
+                _logger.LogWarning("User {PerformingUserId} is not the creator of contact {ContactId} (Creator: {CreatorId}). Update forbidden.", dto.UpdatedBy, id, contactToUpdate.CreatedBy);
+                return Forbid("User is not authorized to update this contact.");
+            }
+
+            var privileges = await _userPrivilegeRepository.GetPrivilegesByUserIdAsync(dto.UpdatedBy);
+            if (!privileges.Any(p => p.PrivilegeName == "EditOwnContact")) 
+            {
+                _logger.LogWarning("User {PerformingUserId} lacks 'EditOwnContact' privilege for contact ID {ContactId}.", dto.UpdatedBy, id);
+                return Forbid("User lacks privilege to edit this contact.");
+            }
+
+            _logger.LogInformation("User {PerformingUserId} authorized to update contact {ContactId}.", dto.UpdatedBy, id);
+            try
+            {
+                var updatedContact = await _contactService.UpdateContactAsync(id, dto);
+                var resultDto = _mapper.Map<ContactReadDto>(updatedContact);
+                return Ok(resultDto);
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating contact {ContactId}", id);
+                return StatusCode(StatusCodes.Status500InternalServerError, "An internal error occurred while updating contact.");
+            }
         }
+
+        [HttpDelete("customer/{id}")]
+        public async Task<IActionResult> SoftDeleteCustomer(long id, [FromQuery] long performingUserId) // Get performing user from query
+        {
+            _logger.LogInformation("Attempting to soft delete customer ID {CustomerId} by User ID {PerformingUserId}", id, performingUserId);
+
+            if (performingUserId <= 0)
+            {
+                return BadRequest("Performing User ID must be specified.");
+            }
+
+            var customerToDelete = await _customerService.GetCustomerByIdAsync(id);
+            if (customerToDelete == null)
+            {
+                return NotFound($"Customer with ID {id} not found.");
+            }
+
+            if (customerToDelete.CreatedBy != performingUserId)
+            {
+                _logger.LogWarning("User {PerformingUserId} is not the creator of customer {CustomerId} (Creator: {CreatorId}). Delete forbidden.", performingUserId, id, customerToDelete.CreatedBy);
+                return Forbid("User is not authorized to delete this customer.");
+            }
+
+            var privileges = await _userPrivilegeRepository.GetPrivilegesByUserIdAsync(performingUserId);
+            if (!privileges.Any(p => p.PrivilegeName == "DeleteOwnCustomer")) 
+            {
+                _logger.LogWarning("User {PerformingUserId} lacks 'DeleteOwnCustomer' privilege for customer ID {CustomerId}.", performingUserId, id);
+                return Forbid("User lacks privilege to delete this customer.");
+            }
+
+            _logger.LogInformation("User {PerformingUserId} authorized to delete customer {CustomerId}.", performingUserId, id);
+            var result = await _customerService.SoftDeleteCustomerAsync(id, performingUserId); 
+            if (result == null) 
+            {
+                return NotFound($"Customer with ID {id} not found during delete operation.");
+            }
+            return NoContent();
+        }
+
+        [HttpDelete("contact/{id}")]
+        public async Task<IActionResult> SoftDeleteContact(long id, [FromQuery] long performingUserId) 
+        {
+            _logger.LogInformation("Attempting to soft delete contact ID {ContactId} by User ID {PerformingUserId}", id, performingUserId);
+            if (performingUserId <= 0)
+            {
+                return BadRequest("Performing User ID must be specified.");
+            }
+
+            var contactToDelete = await _contactService.GetContactByIdAsync(id);
+            if (contactToDelete == null)
+            {
+                return NotFound($"Contact with ID {id} not found.");
+            }
+
+            if (contactToDelete.CreatedBy != performingUserId)
+            {
+                _logger.LogWarning("User {PerformingUserId} is not the creator of contact {ContactId} (Creator: {CreatorId}). Delete forbidden.", performingUserId, id, contactToDelete.CreatedBy);
+                return Forbid("User is not authorized to delete this contact.");
+            }
+
+            var privileges = await _userPrivilegeRepository.GetPrivilegesByUserIdAsync(performingUserId);
+            if (!privileges.Any(p => p.PrivilegeName == "DeleteOwnContact")) 
+            {
+                _logger.LogWarning("User {PerformingUserId} lacks 'DeleteOwnContact' privilege for contact ID {ContactId}.", performingUserId, id);
+                return Forbid("User lacks privilege to delete this contact.");
+            }
+
+            _logger.LogInformation("User {PerformingUserId} authorized to delete contact {ContactId}.", performingUserId, id);
+            var result = await _contactService.SoftDeleteContactAsync(id, performingUserId);
+            if (result == null)
+            {
+                return NotFound($"Contact with ID {id} not found during delete operation.");
+            }
+            return NoContent();
+        }
+        
+
+      
 
     }
 }

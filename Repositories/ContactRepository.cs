@@ -12,11 +12,35 @@ namespace XLead_Server.Repositories
     {
         private readonly ApiDbContext _context;
         private readonly IMapper _mapper;
+        private readonly IUserPrivilegeRepository _userPrivilegeRepository; 
+        private readonly ILogger<ContactRepository> _logger;
 
-        public ContactRepository(ApiDbContext context, IMapper mapper)
+        public ContactRepository(ApiDbContext context, IMapper mapper, IUserPrivilegeRepository userPrivilegeRepository, ILogger<ContactRepository> logger)
         {
             _context = context;
             _mapper = mapper;
+            _userPrivilegeRepository = userPrivilegeRepository;
+            _logger = logger;
+        }
+        private async Task<List<long>> GetRelevantCreatorIdsAsync(long requestingUserId, string overviewPrivilegeName)
+        {
+            var privileges = await _userPrivilegeRepository.GetPrivilegesByUserIdAsync(requestingUserId);
+            bool hasOverviewPrivilege = privileges?.Any(p => p.PrivilegeName == overviewPrivilegeName) ?? false;
+
+            if (hasOverviewPrivilege)
+            {
+                _logger.LogInformation("User {RequestingUserId} has '{OverviewPrivilegeName}'. Fetching data for subordinates.", requestingUserId, overviewPrivilegeName);
+                var subordinateIds = await _context.Users
+                    .Where(u => u.AssignedTo == requestingUserId)
+                    .Select(u => u.Id)
+                    .ToListAsync();
+                return subordinateIds;
+            }
+            else
+            {
+                _logger.LogInformation("User {RequestingUserId} does not have '{OverviewPrivilegeName}'. Fetching own data.", requestingUserId, overviewPrivilegeName);
+                return new List<long> { requestingUserId };
+            }
         }
 
         public async Task<Contact> AddContactAsync(ContactCreateDto dto)
@@ -31,10 +55,22 @@ namespace XLead_Server.Repositories
             return contact;
         }
 
-        public async Task<IEnumerable<ContactReadDto>> GetAllContactsAsync()
+       
+        public async Task<IEnumerable<ContactReadDto>> GetAllContactsAsync(long requestingUserId)
         {
+            
+            var relevantCreatorIds = await GetRelevantCreatorIdsAsync(requestingUserId, "ViewTeamContacts"); 
+
+            if (!relevantCreatorIds.Any())
+            {
+                _logger.LogInformation("No relevant creator IDs for contacts for user {RequestingUserId}.", requestingUserId);
+                return Enumerable.Empty<ContactReadDto>();
+            }
+
+            _logger.LogInformation("Fetching contacts created by User IDs: [{RelevantCreatorIds}] for Requesting User: {RequestingUserId}", string.Join(",", relevantCreatorIds), requestingUserId);
             var contacts = await _context.Contacts
-                .Where(c => c.IsHidden == null || c.IsHidden == false) 
+                .Where(c => (c.IsHidden == null || c.IsHidden == false) &&
+                             relevantCreatorIds.Contains(c.CreatedBy)) 
                 .ToListAsync();
             return _mapper.Map<IEnumerable<ContactReadDto>>(contacts);
         }
@@ -45,56 +81,64 @@ namespace XLead_Server.Repositories
                                          (lastName == null || c.LastName == lastName) &&
                                          c.CustomerId == customerId);
         }
+      
+        public async Task<Contact?> GetContactByIdAsync(long id)
+        {
+            _logger.LogInformation("Fetching contact entity with ID: {ContactId}", id);
+            
+            return await _context.Contacts.AsNoTracking().FirstOrDefaultAsync(c => c.Id == id && (c.IsHidden == null || c.IsHidden == false));
+        }
+
+       
         public async Task<Contact?> UpdateContactAsync(long id, ContactUpdateDto dto)
         {
-         
-            var existingContact = await _context.Contacts.FindAsync(id);
+            _logger.LogInformation("Attempting to update contact ID {ContactId} by User ID {PerformingUserId}", id, dto.UpdatedBy);
+            var existingContact = await _context.Contacts.FirstOrDefaultAsync(c => c.Id == id);
 
-            if (existingContact == null)
+            if (existingContact == null || existingContact.IsHidden == true) 
             {
-                return null; 
+                _logger.LogWarning("Contact with ID {ContactId} not found or is hidden, cannot update.", id);
+                return null;
             }
 
-          
-            existingContact.FirstName = dto.FirstName;
-            existingContact.LastName = dto.LastName;
-            existingContact.Designation = dto.Designation;
-            existingContact.Email = dto.Email;
-            existingContact.PhoneNumber = dto.PhoneNumber;
-            existingContact.IsActive = dto.IsActive;
-
            
+            _mapper.Map(dto, existingContact);
+
+            existingContact.UpdatedBy = dto.UpdatedBy; 
             existingContact.UpdatedAt = DateTime.UtcNow;
-          
 
             try
             {
                 await _context.SaveChangesAsync();
+                _logger.LogInformation("Successfully updated contact ID {ContactId}", id);
             }
             catch (DbUpdateException ex)
             {
-
-                Console.WriteLine(ex.ToString());
-                throw;
+                _logger.LogError(ex, "Database update error while updating contact ID {ContactId}", id);
+                throw; 
             }
-
             return existingContact;
         }
 
-        public async Task<Contact?> SoftDeleteContactAsync(long id)
+    
+        public async Task<Contact?> SoftDeleteContactAsync(long id, long performingUserId)
         {
-            var contactToDelete = await _context.Contacts.FindAsync(id);
-            if (contactToDelete == null)
+            _logger.LogInformation("Attempting to soft delete contact ID {ContactId} by User ID {PerformingUserId}", id, performingUserId);
+            var contactToDelete = await _context.Contacts.FirstOrDefaultAsync(c => c.Id == id);
+
+            if (contactToDelete == null || contactToDelete.IsHidden == true) 
             {
-                return null; 
+                _logger.LogWarning("Contact with ID {ContactId} not found or already hidden, cannot soft delete.", id);
+                return null;
             }
 
             contactToDelete.IsHidden = true;
             contactToDelete.IsActive = false; 
+            contactToDelete.UpdatedBy = performingUserId;
             contactToDelete.UpdatedAt = DateTime.UtcNow;
-            
 
             await _context.SaveChangesAsync();
+            _logger.LogInformation("Successfully soft-deleted contact ID {ContactId}", id);
             return contactToDelete;
         }
 

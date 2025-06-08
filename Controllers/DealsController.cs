@@ -56,7 +56,44 @@ namespace XLead_Server.Controllers
             var deals = await _dealRepository.GetAllDealsAsync(); 
             return Ok(deals);
         }
+        [HttpPut("{id}")]
+        [ProducesResponseType(typeof(DealReadDto), 200)]
+        [ProducesResponseType(400)]
+        [ProducesResponseType(404)]
+        [ProducesResponseType(500)]
+        public async Task<ActionResult<DealReadDto>> UpdateDeal(long id, [FromBody] DealEditDto dto)
+        {
+            _logger.LogInformation($"Attempting to update deal with ID {id} with payload: {@dto}", dto);
 
+            if (!ModelState.IsValid)
+            {
+                _logger.LogWarning("Invalid model state for DealEditDto: {@ModelState}", ModelState);
+                return BadRequest(ModelState);
+            }
+
+            try
+            {
+                var updatedDealDto = await _dealRepository.UpdateDealAsync(id, dto);
+                if (updatedDealDto == null)
+                {
+                    _logger.LogWarning($"Deal with ID {id} not found.");
+                    return NotFound($"Deal with ID {id} not found.");
+                }
+                _logger.LogInformation($"Deal with ID {id} updated successfully.");
+                return Ok(updatedDealDto);
+            }
+            catch (InvalidOperationException ex)
+            {
+                _logger.LogError(ex, "Invalid operation while updating deal: {Message}. Inner Exception: {InnerException}", ex.Message, ex.InnerException?.ToString());
+                return BadRequest(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unexpected error while updating deal: {Message}. Inner Exception: {InnerException}", ex.Message, ex.InnerException?.ToString());
+                return Problem($"An unexpected error occurred: {ex.Message}", statusCode: 500);
+            }
+        }
+    
         [HttpPost]
         [ProducesResponseType(typeof(DealReadDto), 201)]
         [ProducesResponseType(400)] 
@@ -111,7 +148,7 @@ namespace XLead_Server.Controllers
         [ProducesResponseType(404)]
         public async Task<ActionResult<IEnumerable<StageHistoryDto>>> GetDealStageHistory(long id, [FromQuery] int userId)
         {
-            // Check privileges
+            
             var privileges = await _userPrivilegeRepository.GetPrivilegesByUserIdAsync(userId);
             if (!privileges.Any(p => p.PrivilegeName == "ViewDealHistory" || p.PrivilegeName == "PipelineDetailAccess"))
             {
@@ -300,6 +337,7 @@ namespace XLead_Server.Controllers
                     title: "Server Error");
             }
         }
+
         [HttpGet("dashboard-metrics/{userId}")]
         [ProducesResponseType(typeof(DashboardMetricsDto), 200)] 
         [ProducesResponseType(403)] 

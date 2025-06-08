@@ -25,8 +25,8 @@ namespace XLead_Server.Models
         public ICollection<Customer> Customers { get; set; } = new List<Customer>(); 
         public ICollection<Customer> UpdatedCustomers { get; set; } = new List<Customer>();
         public ICollection<Contact> Contacts { get; set; } = new List<Contact>(); 
-        public ICollection<Deal> Deals { get; set; } = new List<Deal>(); 
-        
+        public ICollection<Deal> Deals { get; set; } = new List<Deal>();
+        public ICollection<DealStage> CreatedDealStages { get; set; } = new List<DealStage>();
         public ICollection<DealStage> UpdatedDealStages { get; set; } = new List<DealStage>();
         public ICollection<Privilege> Privileges { get; set; } = new List<Privilege>(); 
         public ICollection<StageHistory> DealStageHistory { get; set; } = new List<StageHistory>(); 
@@ -39,5 +39,7 @@ namespace XLead_Server.Models
         public ICollection<IndustrialVertical> CreatedIndustrialVerticals { get; set; } = new List<IndustrialVertical>();
         public ICollection<ServiceLine> CreatedServiceLines { get; set; } = new List<ServiceLine>();
         public ICollection<RevenueType> CreatedRevenueTypes { get; set; } = new List<RevenueType>();
+        public ICollection<Note> CreatedNotes { get; set; }
+        public ICollection<Note> UpdatedNotes { get; set; }
     }
 }

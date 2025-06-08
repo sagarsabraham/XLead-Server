@@ -26,7 +26,7 @@ namespace XLead_Server.Models
         public long? UpdatedBy { get; set; }
         public DateTime? UpdatedAt { get; set; }
         public Boolean? IsHidden { get; set; }
-        public string? CustomFieldsJson { get; set; }
+        //public string? CustomFieldsJson { get; set; }
         public User Creator { get; set; }
         public Account account { get; set; }
         public Region region { get; set; }

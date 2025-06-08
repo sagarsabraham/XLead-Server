@@ -14,13 +14,13 @@ namespace XLead_Server.Controllers
         private readonly IDealRepository _dealRepository;
         private readonly ILogger<DealsController> _logger;
         private readonly IUserPrivilegeRepository _userPrivilegeRepository;
-        private readonly IStageHistoryRepository _stageHistoryRepository;
-        public DealsController(IDealRepository dealRepository, ILogger<DealsController> logger, IUserPrivilegeRepository userPrivilegeRepository, IStageHistoryRepository stageHistoryRepository)
+        
+        public DealsController(IDealRepository dealRepository, ILogger<DealsController> logger, IUserPrivilegeRepository userPrivilegeRepository)
         {
             _dealRepository = dealRepository;
             _logger = logger;
             _userPrivilegeRepository = userPrivilegeRepository;
-            _stageHistoryRepository = stageHistoryRepository;
+        
         }
 
         [HttpGet("{id}")]
@@ -105,106 +105,105 @@ namespace XLead_Server.Controllers
         }
 
 
-        [HttpPut("{id}/stage")]
-        [ProducesResponseType(typeof(DealReadDto), 200)]      
-        [ProducesResponseType(400)]                         
-        [ProducesResponseType(403)]                          
-        [ProducesResponseType(404)]                          
-        [ProducesResponseType(500)]                          
-        public async Task<IActionResult> UpdateDealStage(long id, [FromBody] DealUpdateDto dto)
+        [HttpGet("{id}/stage-history")]
+        [ProducesResponseType(typeof(IEnumerable<StageHistoryDto>), 200)]
+        [ProducesResponseType(403)]
+        [ProducesResponseType(404)]
+        public async Task<ActionResult<IEnumerable<StageHistoryDto>>> GetDealStageHistory(long id, [FromQuery] int userId)
         {
-            _logger.LogInformation("Attempting to update stage for deal ID {DealId} with payload: {@DealUpdateDto}", id, dto);
-
-          
-            if (dto.PerformedByUserId <= 0) 
+            // Check privileges
+            var privileges = await _userPrivilegeRepository.GetPrivilegesByUserIdAsync(userId);
+            if (!privileges.Any(p => p.PrivilegeName == "ViewDealHistory" || p.PrivilegeName == "PipelineDetailAccess"))
             {
-                _logger.LogWarning("PerformedByUserId is missing or invalid in DealUpdateDto.");
-                return BadRequest("User identifier (PerformedByUserId) is required to check privileges and record history.");
+                _logger.LogWarning($"User {userId} lacks ViewDealHistory privilege");
+                return Forbid("User lacks ViewDealHistory privilege");
             }
 
-            var privileges = await _userPrivilegeRepository.GetPrivilegesByUserIdAsync(dto.PerformedByUserId);
-            if (privileges == null || !privileges.Any(p => p.PrivilegeName == "StageUpdate"))
+            _logger.LogInformation($"User {userId} fetching stage history for deal {id}");
+            var history = await _dealRepository.GetDealStageHistoryAsync(id);
+            if (history == null || !history.Any())
             {
-                _logger.LogWarning("User {UserId} lacks 'StageUpdate' privilege for deal ID {DealId}.", dto.PerformedByUserId, id);
-                return Forbid("User lacks the 'StageUpdate' privilege.");
+                return NotFound($"No stage history found for deal with ID {id}.");
             }
-            _logger.LogInformation("User {UserId} has 'StageUpdate' privilege for deal ID {DealId}. Proceeding.", dto.PerformedByUserId, id);
-         
-
-            try
-            {
-               
-                var updatedDealDto = await _dealRepository.UpdateDealStageAsync(id, dto);
-
-                if (updatedDealDto == null)
-                {
-                    _logger.LogWarning("Deal with ID {DealId} not found during stage update attempt.", id);
-                    return NotFound($"Deal with ID {id} not found.");
-                }
-
-                _logger.LogInformation("Deal ID {DealId} stage updated successfully to {StageName}.", id, dto.StageName);
-
-               
-                try
-                {
-                    var stageHistoryCreateDto = new StageHistoryCreateDto
-                    {
-                        DealId = id,
-                        StageName = dto.StageName, 
-                        CreatedBy = dto.PerformedByUserId 
-                    };
-
-                    var createdStageHistory = await _stageHistoryRepository.CreateStageHistoryAsync(stageHistoryCreateDto);
-                    _logger.LogInformation("Stage history created for Deal ID {DealId}, New Stage: {StageName}, History ID: {HistoryId}",
-                        id, dto.StageName, createdStageHistory.Id);
-                }
-                catch (Exception ex_history)
-                {
-                
-                    _logger.LogError(ex_history, "Failed to create stage history for Deal ID {DealId} after successful stage update. New Stage: {StageName}. Error: {ErrorMessage}",
-                        id, dto.StageName, ex_history.Message);
-                   
-                }
-              
-
-                return Ok(updatedDealDto);
-            }
-            catch (InvalidOperationException ex) 
-            {
-                _logger.LogWarning(ex, "Invalid operation while updating stage for deal ID {DealId}: {ErrorMessage}", id, ex.Message);
-                return BadRequest(ex.Message);
-            }
-            catch (Exception ex) 
-            {
-                _logger.LogError(ex, "Unexpected error while updating stage for deal ID {DealId}: {ErrorMessage}", id, ex.Message);
-                return Problem($"An unexpected error occurred while updating deal stage: {ex.Message}", statusCode: 500);
-            }
+            return Ok(history);
         }
-        [HttpGet("{id}/history")]
-        [ProducesResponseType(typeof(IEnumerable<StageHistoryReadDto>), 200)]
-        [ProducesResponseType(404)] 
-        [ProducesResponseType(500)]
-        public async Task<ActionResult<IEnumerable<StageHistoryReadDto>>> GetDealStageHistory(long id)
+
+        [HttpPut("{id}/description")]
+        [ProducesResponseType(typeof(DealReadDto), 200)]
+        [ProducesResponseType(403)]
+        [ProducesResponseType(404)]
+
+        public async Task<IActionResult> UpdateDealDescription(long id, [FromBody] DealDescriptionUpdateDto dto)
         {
-            _logger.LogInformation("Fetching stage history for deal ID {DealId}", id);
-
-         
-
-            try
+            if (!dto.UpdatedBy.HasValue)
             {
-                var history = await _stageHistoryRepository.GetStageHistoryByDealIdAsync(id);
-                if (history == null || !history.Any())
-                {
-                    _logger.LogInformation("No stage history found for deal ID {DealId}", id);
-                    return Ok(Enumerable.Empty<StageHistoryReadDto>());
-                }
-                return Ok(history);
+                return BadRequest("UpdatedBy is required");
             }
-            catch (Exception ex)
+
+            // Check privileges using UpdatedBy from DTO
+            var privileges = await _userPrivilegeRepository.GetPrivilegesByUserIdAsync(dto.UpdatedBy.Value);
+            if (!privileges.Any(p => p.PrivilegeName == "UpdateDealDescription" || p.PrivilegeName == "UpdateDeal" || p.PrivilegeName == "PipelineDetailAccess"))
             {
-                _logger.LogError(ex, "Error fetching stage history for deal ID {DealId}: {ErrorMessage}", id, ex.Message);
-                return Problem("An unexpected error occurred while fetching stage history.", statusCode: 500);
+                _logger.LogWarning($"User {dto.UpdatedBy.Value} lacks UpdateDeal privilege");
+                return Forbid("User lacks UpdateDeal privilege");
             }
+            _logger.LogInformation($"User {dto.UpdatedBy.Value} updating description for deal {id}");
+            var updatedDeal = await _dealRepository.UpdateDealDescriptionAsync(id, dto);
+            if (updatedDeal == null)
+            {
+                return NotFound($"Deal with ID {id} not found.");
+            }
+            return Ok(updatedDeal);
+        }
+
+        [HttpPut("{id}/stage")]
+
+        [ProducesResponseType(typeof(DealReadDto), 200)]
+
+        [ProducesResponseType(403)]
+
+        [ProducesResponseType(404)]
+
+        public async Task<IActionResult> UpdateDealStage(long id, [FromBody] DealUpdateDto dto)
+
+        {
+
+            if (!dto.PerformedByUserId.HasValue)
+
+            {
+
+                return BadRequest("UpdatedBy is required");
+
+            }
+
+
+
+            var privileges = await _userPrivilegeRepository.GetPrivilegesByUserIdAsync(dto.PerformedByUserId.Value);
+
+            if (!privileges.Any(p => p.PrivilegeName == "UpdateDealStage" || p.PrivilegeName == "PipelineDetailAccess"))
+
+            {
+
+                _logger.LogWarning($"User {dto.PerformedByUserId.Value} lacks UpdateDealStage privilege");
+
+                return Forbid("User lacks UpdateDealStage privilege");
+
+            }
+
+            _logger.LogInformation($"User {dto.PerformedByUserId.Value} updating stage for deal {id}");
+
+            var updatedDeal = await _dealRepository.UpdateDealStageAsync(id, dto);
+
+            if (updatedDeal == null)
+
+            {
+
+                return NotFound($"Deal with ID {id} not found.");
+
+            }
+
+            return Ok(updatedDeal);
+
         }
 
         [HttpGet("byCreator/{userId}")]
@@ -237,7 +236,7 @@ namespace XLead_Server.Controllers
 
         
         var privileges = await _userPrivilegeRepository.GetPrivilegesByUserIdAsync(managerId);
-        if (privileges == null || !privileges.Any(p => p.PrivilegeName == "overview"))
+        if (privileges == null || !privileges.Any(p => p.PrivilegeName == "Overview"))
         {
             _logger.LogWarning("User with ID {ManagerIdFromRoute} lacks 'Overview' privilege or does not exist.", managerId);
             return Forbid($"User ID {managerId} lacks the required 'Overview' privilege to view this data.");
@@ -265,7 +264,7 @@ namespace XLead_Server.Controllers
 
       
         var privileges = await _userPrivilegeRepository.GetPrivilegesByUserIdAsync(managerId);
-        if (privileges == null || !privileges.Any(p => p.PrivilegeName == "overview"))
+        if (privileges == null || !privileges.Any(p => p.PrivilegeName == "Overview"))
         {
             _logger.LogWarning("User with ID {ManagerIdFromRoute} lacks 'Overview' privilege for stage counts or does not exist.", managerId);
             return Forbid($"User ID {managerId} lacks the required 'Overview' privilege to view this data.");
@@ -302,8 +301,8 @@ namespace XLead_Server.Controllers
             }
         }
         [HttpGet("dashboard-metrics/{userId}")]
-        [ProducesResponseType(typeof(DashboardMetricsDto), 200)] // Assuming DTO is DashboardMetricsDto
-        [ProducesResponseType(403)] // User lacks general permission to view any dashboard
+        [ProducesResponseType(typeof(DashboardMetricsDto), 200)] 
+        [ProducesResponseType(403)] 
         [ProducesResponseType(500)]
         public async Task<ActionResult<DashboardMetricsDto>> GetDashboardMetrics(long userId)
         {

@@ -9,8 +9,21 @@ namespace XLead_Server.Profiles
         public MappingProfile()
         {
             CreateMap<Privilege, PrivilegeReadDto>();
-            CreateMap<StageHistory, StageHistoryReadDto>()
-        .ForMember(dest => dest.StageName, opt => opt.MapFrom(src => src.DealStage != null ? src.DealStage.StageName : "Unknown Stage"));
+            CreateMap<ContactUpdateDto, Contact>()
+           .ForMember(dest => dest.Id, opt => opt.Ignore())
+           .ForMember(dest => dest.CustomerId, opt => opt.Ignore())
+           .ForMember(dest => dest.CreatedBy, opt => opt.Ignore())
+           .ForMember(dest => dest.CreatedAt, opt => opt.Ignore());
+
+
+            CreateMap<AttachmentCreateDto, Attachment>();
+
+            CreateMap<Attachment, AttachmentReadDto>();
+            CreateMap<CustomerUpdateDto, Customer>()
+                .ForMember(dest => dest.Id, opt => opt.Ignore())
+                .ForMember(dest => dest.CreatedBy, opt => opt.Ignore())
+                .ForMember(dest => dest.CreatedAt, opt => opt.Ignore());
+
 
 
             CreateMap<CustomerCreateDto, Customer>()
@@ -69,6 +82,7 @@ namespace XLead_Server.Profiles
                 .ForMember(dest => dest.CreatedBy, opt => opt.MapFrom(src => src.CreatedBy))
                 .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => src.CreatedAt));
         }
+
 
 
     }

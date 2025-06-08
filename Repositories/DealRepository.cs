@@ -166,8 +166,99 @@ namespace XLead_Server.Repositories
         }
 
 
-      
-        public async Task<DealReadDto?> UpdateDealStageAsync(long id, DealUpdateDto dto) 
+
+        public async Task<DealReadDto?> UpdateDealStageAsync(long id, DealUpdateDto dto)
+
+        {
+
+            var deal = await _context.Deals
+
+                .Include(d => d.dealStage)
+
+                .FirstOrDefaultAsync(d => d.Id == id);
+
+            if (deal == null)
+
+            {
+
+                return null;
+
+            }
+
+
+
+            var newStage = await _context.DealStages
+
+                .FirstOrDefaultAsync(s => s.StageName == dto.StageName);
+
+            if (newStage == null)
+
+            {
+
+                throw new InvalidOperationException($"Stage '{dto.StageName}' not found.");
+
+            }
+
+            if (deal.DealStageId != newStage.Id)
+
+            {
+
+                var stageHistory = new StageHistory
+
+                {
+
+                    DealId = deal.Id,
+
+                    DealStageId = newStage.Id,
+
+                    CreatedBy = dto.PerformedByUserId ?? 1,
+
+                    CreatedAt = DateTime.UtcNow
+
+                };
+
+                _context.StageHistories.Add(stageHistory);
+
+
+
+                deal.DealStageId = newStage.Id;
+
+                deal.UpdatedAt = DateTime.UtcNow;
+
+                deal.UpdatedBy = dto.PerformedByUserId;
+
+            }
+
+            await _context.SaveChangesAsync();
+
+
+
+            return await GetDealByIdAsync(deal.Id);
+
+        }
+
+
+        public async Task<IEnumerable<StageHistoryDto>> GetDealStageHistoryAsync(long dealId)
+        {
+            var history = await _context.StageHistories
+                .Where(sh => sh.DealId == dealId)
+                .Include(sh => sh.DealStage)
+                .Include(sh => sh.Creator)
+                .OrderByDescending(sh => sh.CreatedAt)
+                .Select(sh => new StageHistoryDto
+                {
+                    Id = sh.Id,
+                    DealId = sh.DealId,
+                    StageName = sh.DealStage.StageName,
+                    StageDisplayName = sh.DealStage.DisplayName,
+                    CreatedBy = sh.Creator != null ? sh.Creator.Name : "Unknown User",
+                    CreatedAt = sh.CreatedAt
+                })
+                .ToListAsync();
+
+            return history;
+        }
+        public async Task<DealReadDto?> UpdateDealDescriptionAsync(long id, DealDescriptionUpdateDto dto)
         {
             var deal = await _context.Deals
                 .FirstOrDefaultAsync(d => d.Id == id);
@@ -177,25 +268,18 @@ namespace XLead_Server.Repositories
                 return null;
             }
 
-            var stage = await _context.DealStages
-                .FirstOrDefaultAsync(s => s.StageName == dto.StageName);
 
-            if (stage == null)
-            {
-                
-                throw new InvalidOperationException($"Stage '{dto.StageName}' not found.");
-            }
-
-            deal.DealStageId = stage.Id;
+            deal.Description = dto.Description;
             deal.UpdatedAt = DateTime.UtcNow;
-            deal.UpdatedBy = dto.PerformedByUserId; 
+            deal.UpdatedBy = dto.UpdatedBy;
+
 
             await _context.SaveChangesAsync();
 
-          
+
             return await GetDealByIdAsync(deal.Id);
         }
-      
+
         public async Task<IEnumerable<DealReadDto>> GetDealsByCreatorIdAsync(long creatorId)
         {
             

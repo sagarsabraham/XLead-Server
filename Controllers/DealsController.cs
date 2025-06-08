@@ -366,5 +366,42 @@ namespace XLead_Server.Controllers
             }
             return Ok(updatedDeal);
         }
+        [HttpPut("{id}")]
+        [ProducesResponseType(typeof(DealReadDto), 200)]
+        [ProducesResponseType(400)]
+        [ProducesResponseType(404)]
+        [ProducesResponseType(500)]
+        public async Task<ActionResult<DealReadDto>> UpdateDeal(long id, [FromBody] DealEditDto dto)
+        {
+            _logger.LogInformation($"Attempting to update deal with ID {id} with payload: {@dto}", dto);
+
+            if (!ModelState.IsValid)
+            {
+                _logger.LogWarning("Invalid model state for DealEditDto: {@ModelState}", ModelState);
+                return BadRequest(ModelState);
+            }
+
+            try
+            {
+                var updatedDealDto = await _dealRepository.UpdateDealAsync(id, dto);
+                if (updatedDealDto == null)
+                {
+                    _logger.LogWarning($"Deal with ID {id} not found.");
+                    return NotFound($"Deal with ID {id} not found.");
+                }
+                _logger.LogInformation($"Deal with ID {id} updated successfully.");
+                return Ok(updatedDealDto);
+            }
+            catch (InvalidOperationException ex)
+            {
+                _logger.LogError(ex, "Invalid operation while updating deal: {Message}. Inner Exception: {InnerException}", ex.Message, ex.InnerException?.ToString());
+                return BadRequest(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unexpected error while updating deal: {Message}. Inner Exception: {InnerException}", ex.Message, ex.InnerException?.ToString());
+                return Problem($"An unexpected error occurred: {ex.Message}", statusCode: 500);
+            }
+        }
     }
 }

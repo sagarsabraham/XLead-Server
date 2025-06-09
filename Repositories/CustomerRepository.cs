@@ -22,12 +22,11 @@ namespace XLead_Server.Repositories
         }
         private async Task ValidateGlobalUniqueness(CustomerCreateDto dto, long? customerIdToExclude = null)
         {
-            // 1. Check Phone Number
+            
             if (!string.IsNullOrWhiteSpace(dto.CustomerPhoneNumber))
             {
                 var normalizedPhone = NormalizationHelper.NormalizePhoneNumber(dto.CustomerPhoneNumber);
 
-                // Check against other Customers' numbers
                 var customerPhoneQuery = _context.Customers.AsQueryable();
                 if (customerIdToExclude.HasValue) customerPhoneQuery = customerPhoneQuery.Where(c => c.Id != customerIdToExclude.Value);
                 if (await customerPhoneQuery.AnyAsync(c => EF.Functions.Like(c.CustomerPhoneNumber.Replace("-", "").Replace("(", "").Replace(")", "").Replace(" ", ""), $"%{normalizedPhone}%"))) // Example of in-DB normalization
@@ -35,14 +34,14 @@ namespace XLead_Server.Repositories
                     throw new ArgumentException($"The phone number '{dto.CustomerPhoneNumber}' is already in use by another customer.");
                 }
 
-                // Check against Contacts' numbers
+                
                 if (await _context.Contacts.AnyAsync(c => EF.Functions.Like(c.PhoneNumber.Replace("-", "").Replace("(", "").Replace(")", "").Replace(" ", ""), $"%{normalizedPhone}%")))
                 {
                     throw new ArgumentException($"The phone number '{dto.CustomerPhoneNumber}' is already in use by a contact.");
                 }
             }
 
-            // 2. Check Website
+            
             if (!string.IsNullOrWhiteSpace(dto.Website))
             {
                 var normalizedWebsite = NormalizationHelper.NormalizeWebsite(dto.Website);
@@ -56,8 +55,7 @@ namespace XLead_Server.Repositories
         }
         public async Task<IEnumerable<CustomerReadDto>> GetAllCustomersAsync()
         {
-            // FIX: Filter out records where IsHidden is explicitly true.
-            // This correctly includes records where IsHidden is false or null.
+            
             var customers = await _context.Customers
                 .Where(c => c.IsHidden != true)
                 .ToListAsync();

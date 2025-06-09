@@ -71,4 +71,101 @@ VALUES
 ('Closed Lost', 'Closed Lost', 1, GETDATE(), 1, GETDATE(), 1);
 
 
+04/06/2025
+/----------------------------------------------------------------------------------------------------------/
+INSERT INTO Users (Name, Role, AssignedTo, CreatedBy, CreatedAt, UpdatedBy, UpdatedAt)
+VALUES 
+('Pratheesh Kumar', 'Admin', 1, 1, GETUTCDATE(), 1, GETUTCDATE()),
+('Subhash K Joseph', 'Accounts Manager', 1, 1, GETUTCDATE(), 1, GETUTCDATE()),
+('Sreelekshmi G', 'Accounts Manager', 1, 1, GETUTCDATE(), 1, GETUTCDATE()),
+('Sagar S Abraham', 'Salesperson', 2, 2, GETUTCDATE(), 2, GETUTCDATE()),
+('Abhiram M Prasad', 'Salesperson', 2, 2, GETUTCDATE(), 2, GETUTCDATE()),
+('Dhanya P', 'Salesperson', 2, 2, GETUTCDATE(), 2, GETUTCDATE()),
+('Bhagya Unnikrishnan', 'Salesperson', 3, 3, GETUTCDATE(), 3, GETUTCDATE()),
+('Harinand S', 'Salesperson', 3, 3, GETUTCDATE(), 3, GETUTCDATE()),
+('Meera M', 'Salesperson', 3, 3, GETUTCDATE(), 3, GETUTCDATE());
 
+
+INSERT INTO Privileges (PrivilegeName, CreatedBy, CreatedAt)
+VALUES
+('Overview', 1, GETUTCDATE()), 
+('PipelineDetailAccess', 1, GETUTCDATE()),
+('CreateCustomer', 1, GETUTCDATE()),
+('CreateContact', 1, GETUTCDATE()),
+('Dashboard Overview',1,GETUTCDATE()),
+('ViewOwnDashboard',1,GETUTCDATE()),
+('CreateDeal', 1, GETUTCDATE()),
+('UpdateDealStage', 1, GETUTCDATE());
+
+
+INSERT INTO UsersPrivileges (UserId, PrivilegeId, CreatedBy, CreatedAt)
+VALUES 
+(3, 1, 1, GETUTCDATE()),
+(4, 2, 1, GETUTCDATE()),
+(4, 3, 1, GETUTCDATE()),
+(4, 4, 1, GETUTCDATE()),
+(3, 5, 2, GETUTCDATE()),
+(4, 6, 2, GETUTCDATE()),
+(4, 7, 2, GETUTCDATE()),
+(4, 8, 2, GETUTCDATE());
+
+INSERT INTO Regions (RegionName,CreatedBy,CreatedAt)
+VALUES
+('Banglore', 1, GETUTCDATE()),
+('Kochi', 1, GETUTCDATE()),
+('Japan', 1, GETUTCDATE()),
+('Trivandram', 1, GETUTCDATE());
+
+INSERT INTO IndustrialVerticals (IndustryName,CreatedBy,CreatedAt) 
+VALUES 
+('Retail & E-Commerce', 1, GETUTCDATE()),
+('Insurance', 1, GETUTCDATE());
+
+INSERT INTO Countries (CountryName,CreatedBy,CreatedAt) 
+VALUES
+('UK', 1, GETUTCDATE()),
+('USA', 1, GETUTCDATE()),
+('India', 1, GETUTCDATE()),
+('Japan', 1, GETUTCDATE());
+
+INSERT INTO Accounts (AccountName,CreatedBy,CreatedAt) 
+VALUES 
+('Acme Corporation', 1, GETUTCDATE());
+
+INSERT INTO Accounts (AccountName,CreatedBy,CreatedAt) 
+VALUES 
+('Knitt', 1, GETUTCDATE());
+
+INSERT INTO Domains (DomainName,CreatedBy,CreatedAt) 
+VALUES 
+('Edtech', 1, GETUTCDATE()),
+('Automobile', 1, GETUTCDATE());
+
+INSERT INTO RevenueTypes (RevenueTypeName,CreatedBy,CreatedAt) 
+VALUES 
+('T and M', 1, GETUTCDATE()),
+('Fixed Fee', 1, GETUTCDATE());
+
+INSERT INTO DUs (DUName,CreatedBy,CreatedAt) 
+VALUES 
+('DU-1', 1, GETUTCDATE()),
+('DU-2', 1, GETUTCDATE()),
+('DU-3', 1, GETUTCDATE()),
+('DU-4', 1, GETUTCDATE()),
+('DU-5', 1, GETUTCDATE()),
+('DU-6', 1, GETUTCDATE());
+
+INSERT INTO ServiceLines (ServiceName,CreatedBy,CreatedAt)
+VALUES
+('Strategy & Consulting', 1, GETUTCDATE()),
+('Quality Engineering', 1, GETUTCDATE()),
+('Experience Design', 1, GETUTCDATE());
+
+INSERT INTO DealStages (StageName, DisplayName, CreatedBy,CreatedAt,[Order])
+VALUES
+('Qualification', 'Qualification', 1, GETUTCDATE(),1),
+('Need Analysis', 'Need Analysis', 1, GETUTCDATE(), 2),
+('Proposal/Price Quote', 'Proposal/Price Quote', 1, GETUTCDATE(), 3),
+('Negotiation/Review', 'Negotiation/Review', 1, GETUTCDATE(),4),
+('Closed Won', 'Closed Won', 1, GETUTCDATE(), 5),
+('Closed Lost', 'Closed Lost', 1, GETUTCDATE(), 6);

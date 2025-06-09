@@ -38,8 +38,6 @@
 //}
 
 
-using System.ComponentModel.DataAnnotations.Schema;
-
 namespace XLead_Server.Models
 {
     public class Deal
@@ -66,6 +64,7 @@ namespace XLead_Server.Models
         public long ContactId { get; set; }
         public DateTime StartingDate { get; set; }
         public DateTime ClosingDate { get; set; }
+        public bool? IsHidden { get; set; }
         public long CreatedBy { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public long? UpdatedBy { get; set; }
@@ -84,9 +83,7 @@ namespace XLead_Server.Models
 
         public ICollection<StageHistory> DealStageHistory { get; set; } = new List<StageHistory>();
         public ICollection<Attachment> Attachments { get; set; } = new List<Attachment>();
-       
-       
-
+        public ICollection<Note> Notes { get; set; }
     }
 
 }

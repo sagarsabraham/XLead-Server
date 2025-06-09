@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using XLead_Server.Interfaces;
 using XLead_Server.Models;
 using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
+using Attachment = XLead_Server.Models.Attachment;
 
 namespace XLead_Server.Data
 {
@@ -26,8 +27,10 @@ namespace XLead_Server.Data
         public DbSet<Country> Countries { get; set; }
         public DbSet<DealStage> DealStages { get; set; }
         public DbSet<StageHistory> StageHistories { get; set; }
+        public DbSet<Attachment> Attachments { get; set; }
         public DbSet<IndustrialVertical> IndustrialVerticals { get; set; }
         public DbSet<ServiceLine> ServiceLines { get; set; }
+        public DbSet<Note> Notes { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -57,6 +60,25 @@ namespace XLead_Server.Data
                 .WithMany(u => u.CreatedAccounts)
                 .HasForeignKey(a => a.CreatedBy)
                 .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            //Note Relationships
+            modelBuilder.Entity<Note>(entity =>
+            {
+                entity.HasOne(n => n.Deal)
+                .WithMany(d => d.Notes)
+                .HasForeignKey(n => n.DealId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(n => n.Creator)
+                    .WithMany(u => u.CreatedNotes)
+                    .HasForeignKey(n => n.CreatedBy)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(n => n.Updater)
+                    .WithMany(u => u.UpdatedNotes)
+                    .HasForeignKey(n => n.UpdatedBy)
+                    .OnDelete(DeleteBehavior.Restrict);
             });
 
             // Attachment Relationships
@@ -182,14 +204,19 @@ namespace XLead_Server.Data
             // DealStage Relationships
             modelBuilder.Entity<DealStage>(entity =>
             {
-                entity.HasOne(ds => ds.Creator)
-                .WithMany(u => u.DealStages)
-                .HasForeignKey(ds => ds.CreatedBy)
-                .OnDelete(DeleteBehavior.Restrict);
-
                 entity.HasMany(ds => ds.DealStageHistories)
                 .WithOne(sh => sh.DealStage)
                 .HasForeignKey(sh => sh.DealStageId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne<User>()
+                .WithMany(u => u.CreatedDealStages)
+                .HasForeignKey(ds => ds.CreatedBy)
+                .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne<User>()
+                .WithMany(u => u.UpdatedDealStages)
+                .HasForeignKey(ds => ds.UpdatedBy)
                 .OnDelete(DeleteBehavior.Restrict);
             });
 

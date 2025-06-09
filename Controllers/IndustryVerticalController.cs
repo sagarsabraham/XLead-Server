@@ -1,6 +1,10 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 using XLead_Server.Interfaces;
+using XLead_Server.Models;
 using XLead_Server.Repositories;
 
 namespace XLead_Server.Controllers
@@ -9,20 +13,24 @@ namespace XLead_Server.Controllers
     [ApiController]
     public class IndustryVerticalController : ControllerBase
     {
-        private IndustryVerticalRepository _industryverticalRepository;
-        public IndustryVerticalController(IIndustryVertical industryVertical)
+        private readonly IIndustryVertical _industryVerticalRepository;
+
+        public IndustryVerticalController(IIndustryVertical industryVerticalRepository)
         {
-            _industryverticalRepository = (IndustryVerticalRepository?)industryVertical;
+            _industryVerticalRepository = industryVerticalRepository;
         }
+
         [HttpGet]
-        public async Task<IActionResult> Get()
+        [ProducesResponseType(typeof(IEnumerable<IndustrialVertical>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<ActionResult<IEnumerable<IndustrialVertical>>> GetAllIndustryVerticalsAsync()
         {
-            var industry = await _industryverticalRepository.GetAllIndustryVertical();
-            if (industry == null)
+            var industryVerticals = await _industryVerticalRepository.GetAllIndustryVertical();
+            if (industryVerticals == null)
             {
-                return NotFound();
+                return NotFound("Industry vertical data is currently unavailable or no industry verticals found.");
             }
-            return Ok(industry);
+            return Ok(industryVerticals);
         }
     }
 }

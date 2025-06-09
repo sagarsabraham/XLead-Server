@@ -1,76 +1,148 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using XLead_Server.Data; // Your DbContext namespace
+using XLead_Server.Data;
 using XLead_Server.Models;
+using XLead_Server.Interfaces;
+using XLead_Server.DTOs;
+using AutoMapper;
 
-[Route("api/[controller]")]
-[ApiController]
-public class AttachmentsController : ControllerBase
+namespace XLead_Server.Controllers
 {
-    private readonly ApiDbContext _context;
-    private readonly IWebHostEnvironment _env;
-
-    public AttachmentsController(ApiDbContext context, IWebHostEnvironment env)
+    [Route("api/[controller]")]
+    [ApiController]
+    public class AttachmentsController : ControllerBase
     {
-        _context = context;
-        _env = env;
-    }
+        private readonly IAttachmentRepository _attachmentRepository;
 
-    // GET: api/attachments/deal/{dealId}
-    [HttpGet("deal/{dealId}")]
-    public async Task<ActionResult<IEnumerable<Attachment>>> GetAttachmentsForDeal(long dealId)
-    {
-        // Returns a list of attachment metadata for a given deal
-        return await _context.Attachments
-            .Where(a => a.DealId == dealId)
-            .OrderByDescending(a => a.CreatedAt)
-            .ToListAsync();
-    }
+        private readonly IWebHostEnvironment _env;
 
-    // POST: api/attachments/upload
-    [HttpPost("upload")]
-    public async Task<ActionResult<Attachment>> UploadAttachment([FromForm] IFormFile file, [FromForm] long dealId)
-    {
-        if (file == null || file.Length == 0)
-            return BadRequest("No file uploaded.");
+        private readonly IMapper _mapper;
 
-        // --- Create DB record first to get the ID ---
-        var attachment = new Attachment
+        public AttachmentsController(
+
+            IAttachmentRepository attachmentRepository,
+
+            IWebHostEnvironment env,
+
+            IMapper mapper)
+
         {
-            FileName = file.FileName,
-            S3UploadName = "", // We'll fill this in after getting the ID
-            DealId = dealId,
-            CreatedAt = DateTime.UtcNow,
-            CreatedBy = 1 // TODO: Get current user ID from HttpContext.User claims
-        };
 
-        // 1. Add to context and save to generate the ID
-        _context.Attachments.Add(attachment);
-        await _context.SaveChangesAsync();
+            _attachmentRepository = attachmentRepository;
 
-        // --- Now, use the generated ID to create the unique filename ---
-        string fileExtension = Path.GetExtension(file.FileName);
-        string uniqueFileName = $"{attachment.Id}{fileExtension}";
+            _env = env;
 
-        // 2. Update the entity with the unique name
-        attachment.S3UploadName = uniqueFileName;
-        await _context.SaveChangesAsync();
+            _mapper = mapper;
 
-        // --- Save the physical file to the server ---
-        var uploadsFolderPath = Path.Combine(_env.ContentRootPath, "UploadedFiles");
-        if (!Directory.Exists(uploadsFolderPath))
-        {
-            Directory.CreateDirectory(uploadsFolderPath);
         }
 
-        var filePath = Path.Combine(uploadsFolderPath, uniqueFileName);
+        [HttpGet("deal/{dealId}")]
 
-        using (var stream = new FileStream(filePath, FileMode.Create))
+        public async Task<ActionResult<IEnumerable<AttachmentReadDto>>> GetAttachmentsForDeal(long dealId)
+
         {
-            await file.CopyToAsync(stream);
+
+            var attachments = await _attachmentRepository.GetByDealIdAsync(dealId);
+
+            return Ok(_mapper.Map<IEnumerable<AttachmentReadDto>>(attachments));
+
         }
 
-        // Return the created attachment metadata
-        return CreatedAtAction(nameof(GetAttachmentsForDeal), new { dealId = attachment.DealId }, attachment);
+        [HttpPost("upload")]
+
+        public async Task<ActionResult<AttachmentReadDto>> UploadAttachment([FromForm] IFormFile file, [FromForm] long dealId)
+
+        {
+
+            if (dealId <= 0)
+
+            {
+
+                return BadRequest(new { message = "A valid DealId is required." });
+
+            }
+
+            if (file == null || file.Length == 0)
+
+            {
+
+                return BadRequest(new { message = "No file uploaded or file is empty." });
+
+            }
+
+            Console.WriteLine($"Received upload request for Deal ID: {dealId} with file: {file.FileName} ({file.Length} bytes)");
+
+            var attachment = new Attachment
+
+            {
+
+                FileName = file.FileName,
+
+                S3UploadName = "",
+
+                DealId = dealId,
+
+                CreatedAt = DateTime.UtcNow,
+
+                CreatedBy = 1
+
+            };
+
+            await _attachmentRepository.AddAsync(attachment);
+
+            await _attachmentRepository.SaveAsync();
+
+            string fileExtension = Path.GetExtension(file.FileName);
+
+            string uniqueFileName = $"{attachment.Id}{fileExtension}";
+
+            attachment.S3UploadName = uniqueFileName;
+
+            _attachmentRepository.Update(attachment);
+
+            await _attachmentRepository.SaveAsync();
+
+            var uploadsFolderPath = Path.Combine(_env.ContentRootPath, "UploadedFiles");
+
+            if (!Directory.Exists(uploadsFolderPath))
+
+            {
+
+                Directory.CreateDirectory(uploadsFolderPath);
+
+            }
+
+            var filePath = Path.Combine(uploadsFolderPath, uniqueFileName);
+
+            try
+
+            {
+
+                using (var stream = new FileStream(filePath, FileMode.Create))
+
+                {
+
+                    await file.CopyToAsync(stream);
+
+                }
+
+            }
+
+            catch (Exception ex)
+
+            {
+
+                Console.WriteLine($"Error saving file {uniqueFileName}: {ex.Message}");
+
+                return StatusCode(StatusCodes.Status500InternalServerError, "Error saving the uploaded file.");
+
+            }
+
+            var attachmentDto = _mapper.Map<AttachmentReadDto>(attachment);
+
+            return CreatedAtAction(nameof(GetAttachmentsForDeal), new { dealId = attachmentDto.DealId }, attachmentDto);
+
+        }
+
     }
+
 }

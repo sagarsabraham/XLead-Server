@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.FileProviders;
+using XLead_Server.Configuration;
 using XLead_Server.Data;
 using XLead_Server.Interfaces;
 using XLead_Server.Repositories;
@@ -17,6 +18,10 @@ builder.Services.AddCors(options =>
             .AllowAnyHeader()
             .AllowCredentials());
 });
+
+builder.Services.AddHttpClient("GeminiClient");
+
+builder.Services.Configure<GeminiSettings>(builder.Configuration.GetSection("GeminiSettings"));
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>

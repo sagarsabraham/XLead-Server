@@ -5,6 +5,9 @@ using System;
 using System.Threading.Tasks;
 using XLead_Server.DTOs;
 using XLead_Server.Interfaces;
+using Microsoft.Extensions.Options;      // Add this using
+using XLead_Server.Configuration;      // Add this using
+using System.Net.Http;                   // Add this using
 
 namespace XLead_Server.Controllers
 {
@@ -17,19 +20,25 @@ namespace XLead_Server.Controllers
         private readonly ISqlValidationService _sqlValidationService;
         private readonly IDataQueryRepository _dataQueryService;
         private readonly ILogger<AiQueryController> _logger;
+        private readonly GeminiSettings _geminiSettings;         // Add this field for the new endpoint
+        private readonly IHttpClientFactory _httpClientFactory;  // Add this field for the new endpoint
 
         public AiQueryController(
             IDbSchemaRepository schemaService,
             IAiQueryGeneratorRepository aiQueryGenerator,
             ISqlValidationService sqlValidationService,
             IDataQueryRepository dataQueryService,
-            ILogger<AiQueryController> logger)
+            ILogger<AiQueryController> logger,
+            IOptions<GeminiSettings> geminiSettings, // Add this to the constructor
+            IHttpClientFactory httpClientFactory)    // Add this to the constructor
         {
             _schemaService = schemaService;
             _aiQueryGenerator = aiQueryGenerator;
             _sqlValidationService = sqlValidationService;
             _dataQueryService = dataQueryService;
             _logger = logger;
+            _geminiSettings = geminiSettings.Value;      // Store the injected settings
+            _httpClientFactory = httpClientFactory;      // Store the injected factory
         }
 
         [HttpPost("process-natural-language")]
@@ -59,14 +68,25 @@ namespace XLead_Server.Controllers
 
 
                 if (string.IsNullOrWhiteSpace(generatedSql) ||
-                    generatedSql.StartsWith("ERROR_") || // Check for custom error codes from AI service
+                    generatedSql.StartsWith("ERROR_") ||
                     generatedSql.Equals("AMBIGUOUS_OR_UNSUPPORTED", StringComparison.OrdinalIgnoreCase))
                 {
                     string userMessage = "I'm sorry, I couldn't understand that query, it was too ambiguous, or it's beyond my current capabilities.";
-                    if (generatedSql != null && generatedSql.StartsWith("ERROR_OPENAI_API")) userMessage = "There was an issue communicating with the AI service.";
-                    else if (generatedSql != null && generatedSql.StartsWith("ERROR_")) userMessage = "An internal error occurred while processing the AI request.";
 
-                    _logger.LogWarning("AI could not generate a valid SQL query or indicated ambiguity. AI Output: {Output}", generatedSql);
+                    if (generatedSql != null && generatedSql.Contains("Status 429")) // Handle rate limiting
+                    {
+                        userMessage = "The AI service is currently busy due to high demand. Please try again in a moment.";
+                    }
+                    else if (generatedSql != null && (generatedSql.StartsWith("ERROR_GEMINI_API") || generatedSql.StartsWith("ERROR_HTTP_REQUEST")))
+                    {
+                        userMessage = "There was an issue communicating with the AI service. The configured model might be unavailable.";
+                    }
+                    else if (generatedSql != null && generatedSql.StartsWith("ERROR_"))
+                    {
+                        userMessage = "An internal error occurred while processing the AI request.";
+                    }
+
+                    _logger.LogWarning("AI could not generate a valid SQL query or indicated an API error. AI Output: {Output}", generatedSql);
                     return Ok(new AiQueryResponseDto { Success = false, Message = userMessage });
                 }
 
@@ -103,6 +123,41 @@ namespace XLead_Server.Controllers
             {
                 _logger.LogError(ex, "An unexpected error occurred in ProcessNaturalLanguageQuery for query: {Query}", request.NaturalLanguageQuery);
                 return StatusCode(500, new AiQueryResponseDto { Success = false, Message = "An unexpected internal server error occurred." });
+            }
+        }
+
+        // --- THIS IS THE NEW DIAGNOSTIC ENDPOINT ---
+        [HttpGet("list-available-models")]
+        public async Task<IActionResult> ListAvailableModels()
+        {
+            if (string.IsNullOrWhiteSpace(_geminiSettings.ApiKey))
+            {
+                return BadRequest("Gemini API Key is not configured in appsettings.json.");
+            }
+
+            var client = _httpClientFactory.CreateClient("GeminiClient");
+            var listModelsUrl = $"https://generativelanguage.googleapis.com/v1beta/models?key={_geminiSettings.ApiKey}";
+
+            try
+            {
+                _logger.LogInformation("Requesting list of available models from Google AI.");
+                var response = await client.GetAsync(listModelsUrl);
+
+                var content = await response.Content.ReadAsStringAsync();
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    _logger.LogError("Failed to list models. Status: {StatusCode}, Response: {ErrorContent}", response.StatusCode, content);
+                    return StatusCode((int)response.StatusCode, new { message = "Failed to list models.", details = content });
+                }
+
+                // Return the successful response as raw JSON, which is what we need to inspect.
+                return Content(content, "application/json");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Exception while trying to list available models.");
+                return StatusCode(500, new { message = "An unexpected error occurred.", details = ex.Message });
             }
         }
     }

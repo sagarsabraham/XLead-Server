@@ -2,10 +2,14 @@ using Microsoft.EntityFrameworkCore;
 using XLead_Server.Data;
 using XLead_Server.Interfaces;
 using XLead_Server.Repositories;
+using XLead_Server.Shared;
 
 
 var builder = WebApplication.CreateBuilder(args);
-
+//builder.Services.AddControllers(options =>
+//{
+//    options.Filters.Add<ApiResponseFilter>();
+//});
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAngularApp",

@@ -3,6 +3,9 @@ using Microsoft.EntityFrameworkCore;
 using XLead_Server.Data;
 using XLead_Server.DTOs;
 using XLead_Server.Interfaces;
+
+
+
 using XLead_Server.Models;
 
 namespace XLead_Server.Repositories
@@ -32,7 +35,11 @@ namespace XLead_Server.Repositories
 
         public async Task<IEnumerable<ContactReadDto>> GetAllContactsAsync()
         {
-            var contacts = await _context.Contacts.ToListAsync();
+            // FIX: Filter out records where IsHidden is explicitly true.
+            // This correctly includes records where IsHidden is false or null.
+            var contacts = await _context.Contacts
+                .Where(c => c.IsHidden != true)
+                .ToListAsync();
             return _mapper.Map<IEnumerable<ContactReadDto>>(contacts);
         }
 
@@ -100,4 +107,3 @@ namespace XLead_Server.Repositories
 
 
 }
-

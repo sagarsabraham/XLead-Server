@@ -7,5 +7,6 @@
         public string? Website { get; set; }
         public int? IndustryVerticalId { get; set; }
         public bool IsActive { get; set; }
+        public int UpdatedBy { get; set; }
     }
 }

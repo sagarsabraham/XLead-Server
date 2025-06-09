@@ -42,7 +42,7 @@ namespace XLead_Server.Repositories
 
         public async Task<DealReadDto?> AddDealAsync(DealCreateDto dto)
         {
-         
+
             if (dto.RegionId.HasValue && !await _context.Regions.AnyAsync(r => r.Id == dto.RegionId.Value))
                 throw new InvalidOperationException($"Region with ID {dto.RegionId.Value} does not exist.");
             if (dto.DealStageId.HasValue && !await _context.DealStages.AnyAsync(ds => ds.Id == dto.DealStageId.Value))
@@ -70,7 +70,7 @@ namespace XLead_Server.Repositories
                     throw new InvalidOperationException($"Failed to create customer: {dto.CustomerName}");
                 }
             }
-          
+
             string firstName;
             string? lastName = null;
             var nameParts = dto.ContactFullName.Trim().Split(new[] { ' ' }, 2, StringSplitOptions.RemoveEmptyEntries);
@@ -104,7 +104,7 @@ namespace XLead_Server.Repositories
             }
             else
             {
-               
+
                 contact.Email = dto.ContactEmail ?? contact.Email;
                 contact.PhoneNumber = dto.ContactPhoneNumber ?? contact.PhoneNumber;
                 contact.Designation = dto.ContactDesignation ?? contact.Designation;
@@ -147,7 +147,7 @@ namespace XLead_Server.Repositories
 
         public async Task<IEnumerable<DealReadDto>> GetAllDealsAsync()
         {
-          
+
             return await _context.Deals
                 .AsNoTracking()
                 .Include(d => d.account)
@@ -252,90 +252,6 @@ namespace XLead_Server.Repositories
             return openPipelineData;
         }
 
-        public async Task<DashboardMetricsDto> GetDashboardMetricsAsync()
-        {
-            var metrics = new DashboardMetricsDto();
-            var now = DateTime.UtcNow;
-
-            var currentMonthStart = new DateTime(now.Year, now.Month, 1, 0, 0, 0, DateTimeKind.Utc);
-            var currentMonthEnd = currentMonthStart.AddMonths(1);
-            var previousMonthStart = currentMonthStart.AddMonths(-1);
-            var previousMonthEnd = currentMonthStart;
-
-           
-            var dealProjections = await _context.Deals
-                .Where(d => (d.CreatedAt >= previousMonthStart && d.CreatedAt < currentMonthEnd) || 
-                             (d.ClosingDate >= previousMonthStart && d.ClosingDate < currentMonthEnd))
-                .Select(d => new
-                {
-                    d.Id,
-                    d.CreatedAt,      
-                    d.ClosingDate,    
-                    d.DealAmount,         
-                    DealStageName = d.dealStage != null ? d.dealStage.StageName : null 
-                })
-                .ToListAsync();
-
-            _logger.LogInformation($"Fetched {dealProjections.Count} deal projections for dashboard metrics (CreatedAt for Open, ClosingDate for Closed).");
-
-         
-            // 1. Open Pipelines - This Month:
-          
-            var currentMonthOpenDealsCount = dealProjections
-                .Count(d => d.CreatedAt >= currentMonthStart && d.CreatedAt < currentMonthEnd &&
-                             d.DealStageName != StageClosedWon && d.DealStageName != StageClosedLost);
-
-        
-            var previousMonthOpenDealsCount = dealProjections
-                .Count(d => d.CreatedAt >= previousMonthStart && d.CreatedAt < previousMonthEnd &&
-                             d.DealStageName != StageClosedWon && d.DealStageName != StageClosedLost);
-
-            metrics.OpenPipelines.Value = currentMonthOpenDealsCount.ToString();
-            metrics.OpenPipelines.PercentageChange = CalculatePercentageChange((double)currentMonthOpenDealsCount, (double)previousMonthOpenDealsCount);
-            metrics.OpenPipelines.IsPositiveTrend = currentMonthOpenDealsCount >= previousMonthOpenDealsCount;
-
-            // 2. Pipelines Won - This Month (ClosingDate in current month AND stage is Closed Won)
-            var currentMonthWonDealsCount = dealProjections
-                .Count(d => d.ClosingDate >= currentMonthStart && d.ClosingDate < currentMonthEnd &&
-                             d.DealStageName == StageClosedWon);
-            var previousMonthWonDealsCount = dealProjections
-                .Count(d => d.ClosingDate >= previousMonthStart && d.ClosingDate < previousMonthEnd &&
-                             d.DealStageName == StageClosedWon);
-
-            metrics.PipelinesWon.Value = currentMonthWonDealsCount.ToString();
-            metrics.PipelinesWon.PercentageChange = CalculatePercentageChange((double)currentMonthWonDealsCount, (double)previousMonthWonDealsCount);
-            metrics.PipelinesWon.IsPositiveTrend = currentMonthWonDealsCount >= previousMonthWonDealsCount;
-
-            // 3. Pipelines Lost - This Month (ClosingDate in current month AND stage is Closed Lost)
-            var currentMonthLostDealsCount = dealProjections
-                .Count(d => d.ClosingDate >= currentMonthStart && d.ClosingDate < currentMonthEnd &&
-                             d.DealStageName == StageClosedLost);
-            var previousMonthLostDealsCount = dealProjections
-                .Count(d => d.ClosingDate >= previousMonthStart && d.ClosingDate < previousMonthEnd &&
-                             d.DealStageName == StageClosedLost);
-
-            metrics.PipelinesLost.Value = currentMonthLostDealsCount.ToString();
-            metrics.PipelinesLost.PercentageChange = CalculatePercentageChange((double)currentMonthLostDealsCount, (double)previousMonthLostDealsCount);
-            metrics.PipelinesLost.IsPositiveTrend = currentMonthLostDealsCount <= previousMonthLostDealsCount;
-
-            // 4. Revenue Won - This Month (Sum Amount for deals ClosingDate in current month AND stage is Closed Won)
-            var currentMonthRevenueWonSum = dealProjections
-                .Where(d => d.ClosingDate >= currentMonthStart && d.ClosingDate < currentMonthEnd &&
-                             d.DealStageName == StageClosedWon)
-                .Sum(d => d.DealAmount);
-            var previousMonthRevenueWonSum = dealProjections
-                .Where(d => d.ClosingDate >= previousMonthStart && d.ClosingDate < previousMonthEnd &&
-                             d.DealStageName == StageClosedWon)
-                .Sum(d => d.DealAmount);
-
-            metrics.RevenueWon.Value = currentMonthRevenueWonSum.ToString("C", CultureInfo.GetCultureInfo("en-US"));
-            metrics.RevenueWon.PercentageChange = CalculatePercentageChange(currentMonthRevenueWonSum, previousMonthRevenueWonSum);
-            metrics.RevenueWon.IsPositiveTrend = currentMonthRevenueWonSum >= previousMonthRevenueWonSum;
-
-            _logger.LogInformation("Calculated dashboard metrics: {@Metrics}", metrics);
-            return metrics;
-        }
-
         private double CalculatePercentageChange(double currentValue, double previousValue)
         {
             if (previousValue == 0)
@@ -391,409 +307,230 @@ namespace XLead_Server.Repositories
 
         public async Task<IEnumerable<DealManagerOverviewDto>> GetDealsForManagerAsync(long managerUserId)
         {
-
-
-
-
             var salespersonIds = await _context.Users
-
                 .Where(u => u.AssignedTo == managerUserId)
-
                 .Select(u => u.Id)
-
                 .ToListAsync();
 
             if (!salespersonIds.Any())
-
             {
-
                 _logger.LogInformation("Repository: No salespersons found reporting to manager ID {ManagerUserId}", managerUserId);
-
                 return Enumerable.Empty<DealManagerOverviewDto>();
-
             }
 
             _logger.LogInformation("Repository: Salespersons for manager {ManagerUserId}: {SalespersonIds}", managerUserId, string.Join(",", salespersonIds));
 
-
-
             var deals = await _context.Deals
-
                 .Where(d => salespersonIds.Contains(d.CreatedBy))
-
                 .Include(d => d.Creator)
-
                 .Include(d => d.dealStage)
-
                 .Include(d => d.account)
-
                 .Include(d => d.region)
-
                 .Include(d => d.du)
-
                 .Include(d => d.contact)
-
                 .OrderByDescending(d => d.ClosingDate)
-
                 .ToListAsync();
 
             _logger.LogInformation("Repository: Found {DealCount} deals for salespersons under manager {ManagerUserId}", deals.Count, managerUserId);
 
-
-
             var overviewDeals = deals.Select(deal => new DealManagerOverviewDto
-
             {
-
                 Id = deal.Id,
-
                 DealName = deal.DealName,
-
                 DealAmount = deal.DealAmount,
-
                 StageName = deal.dealStage?.StageName,
-
                 ClosingDate = deal.ClosingDate,
-
                 SalespersonId = deal.CreatedBy,
-
                 SalespersonName = deal.Creator?.Name ?? $"User ID {deal.CreatedBy}",
-
                 AccountName = deal.account?.AccountName,
-
                 RegionName = deal.region?.RegionName,
-
                 DUName = deal.du?.DUName,
-
                 ContactName = deal.contact != null ? $"{deal.contact.FirstName} {deal.contact.LastName}".Trim() : null,
-
                 StartingDate = deal.StartingDate
-
             }).ToList();
 
             return overviewDeals;
-
         }
 
         public async Task<IEnumerable<ManagerStageCountDto>> GetStageCountsForManagerAsync(long managerUserId)
-
         {
-
             _logger.LogInformation("Repository: Fetching stage counts for manager ID {ManagerUserId}", managerUserId);
 
             var salespersonIds = await _context.Users
-
                 .Where(u => u.AssignedTo == managerUserId)
-
                 .Select(u => u.Id)
-
                 .ToListAsync();
 
             if (!salespersonIds.Any())
-
             {
-
                 _logger.LogInformation("Repository: No salespersons found for stage counts, manager ID {ManagerUserId}", managerUserId);
-
                 return Enumerable.Empty<ManagerStageCountDto>();
-
             }
 
-
-
             var stageCounts = await _context.Deals
-
                 .Where(d => salespersonIds.Contains(d.CreatedBy))
-
                 .Include(d => d.dealStage)
-
                 .GroupBy(d => d.dealStage.StageName)
-
                 .Select(g => new ManagerStageCountDto
-
                 {
-
                     StageName = g.Key ?? "Unassigned Stage",
-
                     DealCount = g.Count()
-
                 })
-
                 .OrderBy(s => s.StageName)
-
                 .ToListAsync();
 
             _logger.LogInformation("Repository: Calculated {Count} stage groups for manager ID {ManagerUserId}", stageCounts.Count, managerUserId);
 
             return stageCounts;
-
         }
 
         private async Task<List<long>> GetRelevantDealCreatorIdsAsync(long requestingUserId)
-
         {
-
             var privileges = await _userPrivilegeRepository.GetPrivilegesByUserIdAsync(requestingUserId);
-
             bool hasOverviewPrivilege = privileges?.Any(p => p.PrivilegeName == "Dashboard Overview") ?? false;
 
             if (hasOverviewPrivilege)
-
             {
-
                 _logger.LogInformation($"User {requestingUserId} has 'Dashboard Overview' privilege. Fetching subordinate IDs.");
-
                 var subordinateIds = await _context.Users
-
                     .Where(u => u.AssignedTo == requestingUserId)
-
                     .Select(u => u.Id)
-
                     .ToListAsync();
 
                 if (!subordinateIds.Any())
-
                 {
-
                     _logger.LogInformation($"Manager {requestingUserId} has no subordinates assigned directly via 'AssignedTo'.");
-
                 }
-
                 var relevantIds = new List<long>(subordinateIds);
-
                 relevantIds.Add(requestingUserId);
-
                 return relevantIds;
-
-
             }
-
             else
-
             {
-
                 _logger.LogInformation($"User {requestingUserId} does not have 'Dashboard Overview'. Fetching their own deals.");
-
                 return new List<long> { requestingUserId };
-
             }
-
         }
 
         public async Task<IEnumerable<TopCustomerDto>> GetTopCustomersByRevenueAsync(long requestingUserId, int count)
-
         {
-
             var relevantCreatorIds = await GetRelevantDealCreatorIdsAsync(requestingUserId);
-
             if (!relevantCreatorIds.Any()) return Enumerable.Empty<TopCustomerDto>();
 
             _logger.LogInformation($"Fetching top {count} customers by revenue for relevant creator IDs: [{string.Join(",", relevantCreatorIds)}].");
 
             var topCustomersData = await _context.Deals
-
                            .Where(d => relevantCreatorIds.Contains(d.CreatedBy))
-
                            .Where(d => d.dealStage.StageName == StageClosedWon && d.contact != null && d.contact.customer != null)
-
                            .Include(d => d.contact).ThenInclude(c => c.customer)
-
                            .Include(d => d.dealStage)
-
                            .GroupBy(d => new { d.contact.customer.Id, d.contact.customer.CustomerName })
-
                            .Select(g => new TopCustomerDto
-
                            {
-
                                CustomerName = g.Key.CustomerName,
-
                                TotalRevenueWon = g.Sum(d => d.DealAmount)
-
                            })
-
                            .OrderByDescending(c => c.TotalRevenueWon)
-
                            .Take(count)
-
                            .ToListAsync();
 
             return topCustomersData;
-
         }
 
         public async Task<DashboardMetricsDto> GetDashboardMetricsAsync(long requestingUserId)
-
         {
-
             var relevantCreatorIds = await GetRelevantDealCreatorIdsAsync(requestingUserId);
 
             if (!relevantCreatorIds.Any())
-
             {
-
                 _logger.LogWarning($"No relevant creator IDs found for GetDashboardMetricsAsync (Requesting User: {requestingUserId}). Returning empty metrics.");
-
                 return new DashboardMetricsDto
-
                 {
-
                     OpenPipelines = new DashboardMetricItemDto { Value = "0", PercentageChange = 0, IsPositiveTrend = true },
-
                     PipelinesWon = new DashboardMetricItemDto { Value = "0", PercentageChange = 0, IsPositiveTrend = true },
-
                     PipelinesLost = new DashboardMetricItemDto { Value = "0", PercentageChange = 0, IsPositiveTrend = true },
-
                     RevenueWon = new DashboardMetricItemDto { Value = "$0.00", PercentageChange = 0, IsPositiveTrend = true }
-
                 };
-
             }
 
             _logger.LogInformation($"Calculating dashboard metrics for relevant creator IDs: [{string.Join(",", relevantCreatorIds)}].");
 
             var metrics = new DashboardMetricsDto();
-
             var now = DateTime.UtcNow;
-
             var currentMonthStart = new DateTime(now.Year, now.Month, 1, 0, 0, 0, DateTimeKind.Utc);
-
             var currentMonthEnd = currentMonthStart.AddMonths(1);
-
             var previousMonthStart = currentMonthStart.AddMonths(-1);
 
             var dealProjections = await _context.Deals
-
                 .Where(d => relevantCreatorIds.Contains(d.CreatedBy))
-
-                .Where(d => (d.CreatedAt >= previousMonthStart && d.CreatedAt < currentMonthEnd) ||
-
+                .Where(d => (d.StartingDate >= previousMonthStart && d.StartingDate < currentMonthEnd) ||
                              (d.ClosingDate >= previousMonthStart && d.ClosingDate < currentMonthEnd))
-
                 .Include(d => d.dealStage)
-
                 .Select(d => new
-
                 {
-
                     d.Id,
-
-                    d.CreatedAt,
-
+                    d.StartingDate,
                     d.ClosingDate,
-
                     d.DealAmount,
-
                     DealStageName = d.dealStage != null ? d.dealStage.StageName : null
-
                 })
-
                 .ToListAsync();
 
-
-
             var currentMonthOpenDealsCount = dealProjections
-
-                .Count(d => d.CreatedAt >= currentMonthStart && d.CreatedAt < currentMonthEnd &&
-
+                .Count(d => d.StartingDate >= currentMonthStart && d.StartingDate < currentMonthEnd &&
                                 d.DealStageName != StageClosedWon && d.DealStageName != StageClosedLost);
-
             var previousMonthOpenDealsCount = dealProjections
-
-                .Count(d => d.CreatedAt >= previousMonthStart && d.CreatedAt < currentMonthStart &&
-
+                .Count(d => d.StartingDate >= previousMonthStart && d.StartingDate < currentMonthStart &&
                                 d.DealStageName != StageClosedWon && d.DealStageName != StageClosedLost);
-
             metrics.OpenPipelines = new DashboardMetricItemDto
-
             {
-
                 Value = currentMonthOpenDealsCount.ToString(),
-
                 PercentageChange = CalculatePercentageChange((double)currentMonthOpenDealsCount, (double)previousMonthOpenDealsCount),
-
                 IsPositiveTrend = currentMonthOpenDealsCount >= previousMonthOpenDealsCount
-
             };
 
             var currentMonthWonDealsCount = dealProjections
-
                 .Count(d => d.ClosingDate >= currentMonthStart && d.ClosingDate < currentMonthEnd &&
-
                                 d.DealStageName == StageClosedWon);
-
             var previousMonthWonDealsCount = dealProjections
-
                 .Count(d => d.ClosingDate >= previousMonthStart && d.ClosingDate < currentMonthStart &&
-
                                 d.DealStageName == StageClosedWon);
-
             metrics.PipelinesWon = new DashboardMetricItemDto
-
             {
-
                 Value = currentMonthWonDealsCount.ToString(),
-
                 PercentageChange = CalculatePercentageChange((double)currentMonthWonDealsCount, (double)previousMonthWonDealsCount),
-
                 IsPositiveTrend = currentMonthWonDealsCount >= previousMonthWonDealsCount
-
             };
 
             var currentMonthLostDealsCount = dealProjections
-
                 .Count(d => d.ClosingDate >= currentMonthStart && d.ClosingDate < currentMonthEnd &&
-
                                 d.DealStageName == StageClosedLost);
-
             var previousMonthLostDealsCount = dealProjections
-
                 .Count(d => d.ClosingDate >= previousMonthStart && d.ClosingDate < currentMonthStart &&
-
                                 d.DealStageName == StageClosedLost);
-
             metrics.PipelinesLost = new DashboardMetricItemDto
-
             {
-
                 Value = currentMonthLostDealsCount.ToString(),
-
                 PercentageChange = CalculatePercentageChange((double)currentMonthLostDealsCount, (double)previousMonthLostDealsCount),
-
                 IsPositiveTrend = currentMonthLostDealsCount <= previousMonthLostDealsCount
-
             };
 
             var currentMonthRevenueWonSum = dealProjections
-
                 .Where(d => d.ClosingDate >= currentMonthStart && d.ClosingDate < currentMonthEnd &&
-
                                 d.DealStageName == StageClosedWon)
-
                 .Sum(d => d.DealAmount);
-
             var previousMonthRevenueWonSum = dealProjections
-
                 .Where(d => d.ClosingDate >= previousMonthStart && d.ClosingDate < currentMonthStart &&
-
                                 d.DealStageName == StageClosedWon)
-
                 .Sum(d => d.DealAmount);
-
             metrics.RevenueWon = new DashboardMetricItemDto
-
             {
-
                 Value = currentMonthRevenueWonSum.ToString("C", CultureInfo.GetCultureInfo("en-US")),
-
                 PercentageChange = CalculatePercentageChange(currentMonthRevenueWonSum, previousMonthRevenueWonSum),
-
                 IsPositiveTrend = currentMonthRevenueWonSum >= previousMonthRevenueWonSum
-
             };
 
             return metrics;
-
         }
 
         public async Task<IEnumerable<StageHistoryDto>> GetDealStageHistoryAsync(long dealId)
@@ -816,7 +553,6 @@ namespace XLead_Server.Repositories
 
             return history;
         }
-
 
         public async Task<DealReadDto?> UpdateDealAsync(long id, DealEditDto dto)
         {
@@ -977,6 +713,5 @@ namespace XLead_Server.Repositories
 
             return await GetDealByIdAsync(deal.Id);
         }
-
     }
 }

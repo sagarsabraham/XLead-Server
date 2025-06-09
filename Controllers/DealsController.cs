@@ -1,13 +1,12 @@
-﻿
-using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
+using System.Linq; // Added for .Any() and .Empty()
 using System.Threading.Tasks;
 using XLead_Server.DTOs;
 using XLead_Server.Interfaces;
-using System.Collections.Generic;
 
 namespace XLead_Server.Controllers
 {
@@ -18,6 +17,7 @@ namespace XLead_Server.Controllers
         private readonly IDealRepository _dealRepository;
         private readonly ILogger<DealsController> _logger;
         private readonly IUserPrivilegeRepository _userPrivilegeRepository;
+
         public DealsController(IDealRepository dealRepository, ILogger<DealsController> logger, IUserPrivilegeRepository userPrivilegeRepository)
         {
             _dealRepository = dealRepository;
@@ -25,7 +25,8 @@ namespace XLead_Server.Controllers
             _userPrivilegeRepository = userPrivilegeRepository;
         }
 
-        [HttpGet("{id}")]
+        // ---------- FIX #1: Added Name = "GetDealById" to the attribute ----------
+        [HttpGet("{id}", Name = "GetDealById")]
         [ProducesResponseType(typeof(DealReadDto), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult<DealReadDto>> GetDealByIdAsync(long id)
@@ -52,7 +53,6 @@ namespace XLead_Server.Controllers
             else
             {
                 _logger.LogInformation("Fetching all deals (no creator filter)");
-
             }
 
             var deals = await _dealRepository.GetAllDealsAsync();
@@ -66,19 +66,13 @@ namespace XLead_Server.Controllers
         [ProducesResponseType(500)]
         public async Task<ActionResult<DealReadDto>> CreateDeal([FromBody] DealCreateDto dto)
         {
-
-
             var privileges = await _userPrivilegeRepository.GetPrivilegesByUserIdAsync(dto.CreatedBy);
             if (privileges == null || !privileges.Any(p => p.PrivilegeName == "CreateDeal"))
             {
                 _logger.LogWarning($"User {dto.CreatedBy} lacks 'CreateDeal' privilege.");
-
                 return Forbid("User lacks the 'CreateDeal' privilege.");
             }
             _logger.LogInformation($"User {dto.CreatedBy} has 'CreateDeal' privilege. Proceeding with deal creation.");
-
-
-
 
             try
             {
@@ -92,7 +86,8 @@ namespace XLead_Server.Controllers
 
                 _logger.LogInformation($"Deal created successfully with ID {createdDealDto.Id}");
 
-                return CreatedAtAction(nameof(GetDealByIdAsync), new { id = createdDealDto.Id }, createdDealDto);
+                // ---------- FIX #2: Changed CreatedAtAction to CreatedAtRoute and used the new route name ----------
+                return CreatedAtRoute("GetDealById", new { id = createdDealDto.Id }, createdDealDto);
             }
             catch (InvalidOperationException ex)
             {
@@ -116,9 +111,6 @@ namespace XLead_Server.Controllers
         {
             _logger.LogInformation("Fetching deals for creator ID {UserId}", userId);
 
-
-
-
             var deals = await _dealRepository.GetDealsByCreatorIdAsync(userId);
 
             if (deals == null || !deals.Any())
@@ -137,9 +129,8 @@ namespace XLead_Server.Controllers
         {
             _logger.LogInformation("Attempting to fetch manager overview deals for Manager ID: {ManagerIdFromRoute}", managerId);
 
-
             var privileges = await _userPrivilegeRepository.GetPrivilegesByUserIdAsync(managerId);
-            if (privileges == null || !privileges.Any(p => p.PrivilegeName == "overview"))
+            if (privileges == null || !privileges.Any(p => p.PrivilegeName == "Overview"))
             {
                 _logger.LogWarning("User with ID {ManagerIdFromRoute} lacks 'Overview' privilege or does not exist.", managerId);
                 return Forbid($"User ID {managerId} lacks the required 'Overview' privilege to view this data.");
@@ -156,7 +147,6 @@ namespace XLead_Server.Controllers
             return Ok(deals);
         }
 
-
         [HttpGet("manager-overview-stage-counts/{managerId}")]
         [ProducesResponseType(typeof(IEnumerable<ManagerStageCountDto>), 200)]
         [ProducesResponseType(403)]
@@ -165,9 +155,8 @@ namespace XLead_Server.Controllers
         {
             _logger.LogInformation("Attempting to fetch manager overview stage counts for Manager ID: {ManagerIdFromRoute}", managerId);
 
-
             var privileges = await _userPrivilegeRepository.GetPrivilegesByUserIdAsync(managerId);
-            if (privileges == null || !privileges.Any(p => p.PrivilegeName == "overview"))
+            if (privileges == null || !privileges.Any(p => p.PrivilegeName == "Overview"))
             {
                 _logger.LogWarning("User with ID {ManagerIdFromRoute} lacks 'Overview' privilege for stage counts or does not exist.", managerId);
                 return Forbid($"User ID {managerId} lacks the required 'Overview' privilege to view this data.");
@@ -178,7 +167,6 @@ namespace XLead_Server.Controllers
 
             return Ok(counts);
         }
-
 
         [HttpGet("top-customers-by-revenue/{userId}")]
         [ProducesResponseType(typeof(IEnumerable<TopCustomerDto>), StatusCodes.Status200OK)]
@@ -204,15 +192,15 @@ namespace XLead_Server.Controllers
             }
         }
         [HttpGet("dashboard-metrics/{userId}")]
-        [ProducesResponseType(typeof(DashboardMetricsDto), 200)] // Assuming DTO is DashboardMetricsDto
-        [ProducesResponseType(403)] // User lacks general permission to view any dashboard
+        [ProducesResponseType(typeof(DashboardMetricsDto), 200)]
+        [ProducesResponseType(403)]
         [ProducesResponseType(500)]
         public async Task<ActionResult<DashboardMetricsDto>> GetDashboardMetrics(long userId)
         {
             _logger.LogInformation($"Fetching dashboard metrics. Requesting User/Context User ID: {userId}");
 
             var privileges = await _userPrivilegeRepository.GetPrivilegesByUserIdAsync(userId);
-            if (privileges == null || !privileges.Any(p => p.PrivilegeName == "ViewOwnDashboard" || p.PrivilegeName == "Dashboard Overview")) // Example
+            if (privileges == null || !privileges.Any(p => p.PrivilegeName == "ViewOwnDashboard" || p.PrivilegeName == "Dashboard Overview"))
             {
                 _logger.LogWarning($"User {userId} lacks necessary privileges to view dashboard metrics.");
                 return Forbid("User lacks permission to view dashboard metrics.");
@@ -229,6 +217,7 @@ namespace XLead_Server.Controllers
                 return Problem("An unexpected error occurred while fetching dashboard metrics.", statusCode: 500);
             }
         }
+
         [HttpGet("open-pipeline-stages/{userId}")]
         [ProducesResponseType(typeof(IEnumerable<PipelineStageDataDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError)]
@@ -236,7 +225,7 @@ namespace XLead_Server.Controllers
         {
             _logger.LogInformation($"Fetching data for open pipeline stage graph for User ID: {userId}.");
             var privileges = await _userPrivilegeRepository.GetPrivilegesByUserIdAsync(userId);
-            if (privileges == null || !privileges.Any(p => p.PrivilegeName == "ViewOwnDashboard" || p.PrivilegeName == "Dashboard Overview")) // Example
+            if (privileges == null || !privileges.Any(p => p.PrivilegeName == "ViewOwnDashboard" || p.PrivilegeName == "Dashboard Overview"))
             {
                 _logger.LogWarning($"User {userId} lacks necessary privileges to view dashboard metrics.");
                 return Forbid("User lacks permission to view dashboard metrics.");
@@ -264,7 +253,7 @@ namespace XLead_Server.Controllers
         {
             _logger.LogInformation($"Fetching monthly revenue data for the last {months} months for User ID: {userId}.");
             var privileges = await _userPrivilegeRepository.GetPrivilegesByUserIdAsync(userId);
-            if (privileges == null || !privileges.Any(p => p.PrivilegeName == "ViewOwnDashboard" || p.PrivilegeName == "Dashboard Overview")) // Example
+            if (privileges == null || !privileges.Any(p => p.PrivilegeName == "ViewOwnDashboard" || p.PrivilegeName == "Dashboard Overview"))
             {
                 _logger.LogWarning($"User {userId} lacks necessary privileges to view dashboard metrics.");
                 return Forbid("User lacks permission to view dashboard metrics.");
@@ -312,7 +301,6 @@ namespace XLead_Server.Controllers
         [ProducesResponseType(typeof(DealReadDto), 200)]
         [ProducesResponseType(403)]
         [ProducesResponseType(404)]
-
         public async Task<IActionResult> UpdateDealDescription(long id, [FromBody] DealDescriptionUpdateDto dto)
         {
             if (!dto.UpdatedBy.HasValue)
@@ -337,7 +325,6 @@ namespace XLead_Server.Controllers
         }
 
         [HttpPut("{id}/stage")]
-
         [ProducesResponseType(typeof(DealReadDto), 200)]
         [ProducesResponseType(403)]
         [ProducesResponseType(404)]
@@ -365,6 +352,43 @@ namespace XLead_Server.Controllers
                 return NotFound($"Deal with ID {id} not found.");
             }
             return Ok(updatedDeal);
+        }
+        [HttpPut("{id}")]
+        [ProducesResponseType(typeof(DealReadDto), 200)]
+        [ProducesResponseType(400)]
+        [ProducesResponseType(404)]
+        [ProducesResponseType(500)]
+        public async Task<ActionResult<DealReadDto>> UpdateDeal(long id, [FromBody] DealEditDto dto)
+        {
+            _logger.LogInformation($"Attempting to update deal with ID {id} with payload: {@dto}", dto);
+
+            if (!ModelState.IsValid)
+            {
+                _logger.LogWarning("Invalid model state for DealEditDto: {@ModelState}", ModelState);
+                return BadRequest(ModelState);
+            }
+
+            try
+            {
+                var updatedDealDto = await _dealRepository.UpdateDealAsync(id, dto);
+                if (updatedDealDto == null)
+                {
+                    _logger.LogWarning($"Deal with ID {id} not found.");
+                    return NotFound($"Deal with ID {id} not found.");
+                }
+                _logger.LogInformation($"Deal with ID {id} updated successfully.");
+                return Ok(updatedDealDto);
+            }
+            catch (InvalidOperationException ex)
+            {
+                _logger.LogError(ex, "Invalid operation while updating deal: {Message}. Inner Exception: {InnerException}", ex.Message, ex.InnerException?.ToString());
+                return BadRequest(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unexpected error while updating deal: {Message}. Inner Exception: {InnerException}", ex.Message, ex.InnerException?.ToString());
+                return Problem($"An unexpected error occurred: {ex.Message}", statusCode: 500);
+            }
         }
     }
 }

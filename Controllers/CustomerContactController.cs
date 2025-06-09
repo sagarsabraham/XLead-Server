@@ -1,5 +1,4 @@
-﻿// XLead_Server/Controllers/CustomerContactController.cs
-using AutoMapper;
+﻿using AutoMapper;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using XLead_Server.DTOs;
@@ -32,8 +31,6 @@ namespace XLead_Server.Controllers
         [HttpPost("customer")]
         public async Task<IActionResult> AddCustomer([FromBody] CustomerCreateDto dto)
         {
-            // Assume userId is passed from frontend (hardcoded as 3)
-            // In a real system, validate userId via authentication (e.g., JWT)
             var privileges = await _userPrivilegeRepository.GetPrivilegesByUserIdAsync(dto.CreatedBy);
             if (!privileges.Any(p => p.PrivilegeName == "CreateCustomer"))
             {
@@ -52,7 +49,7 @@ namespace XLead_Server.Controllers
             }
         }
 
-        // From CustomerContactController.cs
+       
         [HttpPost("contact")]
         public async Task<IActionResult> AddContact([FromBody] ContactCreateDto dto)
         {
@@ -99,5 +96,94 @@ namespace XLead_Server.Controllers
             var contacts = await _contactService.GetAllContactsAsync();
             return Ok(contacts);
         }
+        [HttpPut("customer/{id}")]
+        public async Task<IActionResult> UpdateCustomer(int id, [FromBody] CustomerUpdateDto dto)
+        {
+            // Simplified Privilege Check
+            var privileges = await _userPrivilegeRepository.GetPrivilegesByUserIdAsync(dto.UpdatedBy);
+            if (!privileges.Any(p => p.PrivilegeName == "EditCustomer"))
+            {
+                return Forbid("User does not have the 'EditCustomer' privilege.");
+            }
+
+            try
+            {
+                var updatedCustomer = await _customerService.UpdateCustomerAsync(id, dto);
+                if (updatedCustomer == null)
+                {
+                    return NotFound($"Customer with ID {id} not found.");
+                }
+                return Ok(_mapper.Map<CustomerReadDto>(updatedCustomer));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "An internal error occurred.", details = ex.Message });
+            }
+        }
+
+        [HttpPut("contact/{id}")]
+        public async Task<IActionResult> UpdateContact(long id, [FromBody] ContactUpdateDto dto)
+        {
+            // Simplified Privilege Check
+            var privileges = await _userPrivilegeRepository.GetPrivilegesByUserIdAsync(dto.UpdatedBy);
+            if (!privileges.Any(p => p.PrivilegeName == "EditContact"))
+            {
+                return Forbid("User does not have the 'EditContact' privilege.");
+            }
+
+            try
+            {
+                var updatedContact = await _contactService.UpdateContactAsync(id, dto);
+                if (updatedContact == null)
+                {
+                    return NotFound($"Contact with ID {id} not found.");
+                }
+                return Ok(_mapper.Map<ContactReadDto>(updatedContact));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "An internal error occurred.", details = ex.Message });
+            }
+        }
+
+        [HttpDelete("customer/{id}")]
+        public async Task<IActionResult> SoftDeleteCustomer(long id, [FromQuery] int userId)
+        {
+            // Simplified Privilege Check
+            var privileges = await _userPrivilegeRepository.GetPrivilegesByUserIdAsync(userId);
+            if (!privileges.Any(p => p.PrivilegeName == "DeleteCustomer"))
+            {
+                return Forbid("User does not have the 'DeleteCustomer' privilege.");
+            }
+
+            var result = await _customerService.SoftDeleteCustomerAsync(id);
+            if (result == null)
+            {
+                return NotFound($"Customer with ID {id} not found.");
+            }
+            return NoContent();
+        }
+
+        [HttpDelete("contact/{id}")]
+        public async Task<IActionResult> SoftDeleteContact(long id, [FromQuery] int userId)
+        {
+            // Simplified Privilege Check
+            var privileges = await _userPrivilegeRepository.GetPrivilegesByUserIdAsync(userId);
+            if (!privileges.Any(p => p.PrivilegeName == "DeleteContact"))
+            {
+                return Forbid("User does not have the 'DeleteContact' privilege.");
+            }
+
+            var result = await _contactService.SoftDeleteContactAsync(id);
+            if (result == null)
+            {
+                return NotFound($"Contact with ID {id} not found.");
+            }
+            return NoContent();
+        }
+
     }
+
 }
+ 
+    

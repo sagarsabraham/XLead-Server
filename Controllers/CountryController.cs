@@ -1,6 +1,10 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 using XLead_Server.Interfaces;
+using XLead_Server.Models;
 
 namespace XLead_Server.Controllers
 {
@@ -8,23 +12,24 @@ namespace XLead_Server.Controllers
     [ApiController]
     public class CountryController : ControllerBase
     {
-        private ICountryRepository _countryRepository;
+        private readonly ICountryRepository _countryRepository;
+
         public CountryController(ICountryRepository countryRepository)
         {
             _countryRepository = countryRepository;
         }
 
         [HttpGet]
-
-        public async Task<IActionResult> Get()
+        [ProducesResponseType(typeof(IEnumerable<Country>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<ActionResult<IEnumerable<Country>>> GetAllCountriesAsync()
         {
             var countries = await _countryRepository.GetCountries();
             if (countries == null)
             {
-                return NotFound();
+                return NotFound("Country data is currently unavailable or no countries found.");
             }
             return Ok(countries);
         }
-
     }
 }

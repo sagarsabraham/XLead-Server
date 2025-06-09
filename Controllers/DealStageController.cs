@@ -1,9 +1,10 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using XLead_Server.Controllers;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 using XLead_Server.Interfaces;
 using XLead_Server.Models;
-using XLead_Server.Repositories;
 
 namespace XLead_Server.Controllers
 {
@@ -11,11 +12,13 @@ namespace XLead_Server.Controllers
     [ApiController]
     public class DealStageController : ControllerBase
     {
-        private IDealStageRepository _dealStageRepository;
+        private readonly IDealStageRepository _dealStageRepository;
+
         public DealStageController(IDealStageRepository dealStageRepository)
         {
             _dealStageRepository = dealStageRepository;
         }
+
         [HttpGet]
         [ProducesResponseType(typeof(IEnumerable<DealStage>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -30,4 +33,3 @@ namespace XLead_Server.Controllers
         }
     }
 }
-

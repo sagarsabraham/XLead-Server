@@ -1,5 +1,4 @@
-﻿// XLead_Server/DTOs/CompanyCreateDto.cs
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 
 namespace XLead_Server.DTOs
 {
@@ -11,8 +10,7 @@ namespace XLead_Server.DTOs
 
         [StringLength(2083)]
         public string? Website { get; set; }
-
-        [Required] 
+        [Required]
         [StringLength(50)]
         public string CustomerPhoneNumber { get; set; } 
 

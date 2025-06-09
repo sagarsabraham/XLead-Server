@@ -10,7 +10,7 @@ public class RevenueType
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public long? UpdatedBy { get; set; }
         public DateTime? UpdatedAt { get; set; }
-        public User Creator { get; set; } // Added property to fix CS1061  
+        public User Creator { get; set; }
         public ICollection<Deal> Deals { get; set; }
     }
 }

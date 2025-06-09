@@ -1,10 +1,11 @@
-﻿// XLead_Server/Repositories/CustomerRepository.cs
-using AutoMapper;
+﻿using AutoMapper;
 using Microsoft.EntityFrameworkCore;
 using XLead_Server.Data;
 using XLead_Server.DTOs;
 using XLead_Server.Interfaces;
 using XLead_Server.Models;
+
+
 
 namespace XLead_Server.Repositories
 {
@@ -21,7 +22,11 @@ namespace XLead_Server.Repositories
 
         public async Task<IEnumerable<CustomerReadDto>> GetAllCustomersAsync()
         {
-            var customers = await _context.Customers.ToListAsync();
+            // FIX: Filter out records where IsHidden is explicitly true.
+            // This correctly includes records where IsHidden is false or null.
+            var customers = await _context.Customers
+                .Where(c => c.IsHidden != true)
+                .ToListAsync();
             return _mapper.Map<IEnumerable<CustomerReadDto>>(customers);
         }
 
@@ -55,7 +60,7 @@ namespace XLead_Server.Repositories
                 .FirstOrDefaultAsync(c => c.CustomerName == customerName);
         }
 
-        public async Task<Dictionary<string, List<string>>> GetCustomerContactMapAsync()
+        public async Task<Dictionary<string, CustomerContactMapDto>> GetCustomerContactMapAsync()
         {
             var customers = await _context.Customers
                 .Include(c => c.Contacts)
@@ -63,8 +68,121 @@ namespace XLead_Server.Repositories
 
             return customers.ToDictionary(
                 c => c.CustomerName,
-                c => c.Contacts.Select(ct => $"{ct.FirstName} {ct.LastName}".Trim()).ToList()
+                c => new CustomerContactMapDto
+                {
+                    IsActive = c.IsActive,
+                    IsHidden = c.IsHidden,
+                    Contacts = c.Contacts.Select(ct => $"{ct.FirstName} {ct.LastName}".Trim()).ToList()
+                }
             );
         }
+        public async Task<Customer?> UpdateCustomerAsync(long id, CustomerUpdateDto dto)
+
+        {
+
+            var existingCustomer = await _context.Customers
+
+                .Include(c => c.Contacts)
+
+                .FirstOrDefaultAsync(c => c.Id == id);
+
+            if (existingCustomer == null)
+
+            {
+
+                return null;
+
+            }
+
+            bool wasActive = existingCustomer.IsActive;
+
+            _mapper.Map(dto, existingCustomer);
+
+
+
+            existingCustomer.UpdatedAt = DateTime.UtcNow;
+
+
+
+
+            if (wasActive != existingCustomer.IsActive)
+
+            {
+
+                bool newStatus = existingCustomer.IsActive;
+
+                foreach (var contact in existingCustomer.Contacts)
+
+                {
+
+                    contact.IsActive = newStatus;
+
+
+
+                    contact.UpdatedAt = DateTime.UtcNow;
+
+                }
+
+            }
+
+
+
+            await _context.SaveChangesAsync();
+
+            return existingCustomer;
+
+        }
+
+        public async Task<Customer?> SoftDeleteCustomerAsync(long id)
+
+        {
+
+            var customerToSoftDelete = await _context.Customers
+
+                .Include(c => c.Contacts)
+
+                .FirstOrDefaultAsync(c => c.Id == id);
+
+            if (customerToSoftDelete == null)
+
+            {
+
+                return null;
+
+            }
+
+
+
+            customerToSoftDelete.IsHidden = true;
+
+            customerToSoftDelete.IsActive = false;
+
+            customerToSoftDelete.UpdatedAt = DateTime.UtcNow;
+
+
+
+
+            foreach (var contact in customerToSoftDelete.Contacts)
+
+            {
+
+                contact.IsHidden = true;
+
+                contact.IsActive = false;
+
+                contact.UpdatedAt = DateTime.UtcNow;
+
+            }
+
+
+
+            await _context.SaveChangesAsync();
+
+            return customerToSoftDelete;
+
+        }
+
     }
+
+
 }

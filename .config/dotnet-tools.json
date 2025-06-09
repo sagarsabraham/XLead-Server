@@ -2,6 +2,16 @@
   "version": 1,
   "isRoot": true,
   "tools": {
+<<<<<<< HEAD
+=======
+    "dotnet-ef": {
+      "version": "9.0.5",
+      "commands": [
+        "dotnet-ef"
+      ],
+      "rollForward": false
+    },
+>>>>>>> 1720eab1a532d38c63f5acfa247211260d9cc64a
     "swashbuckle.aspnetcore.cli": {
       "version": "6.5.0",
       "commands": [

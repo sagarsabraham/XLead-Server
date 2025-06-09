@@ -1,5 +1,7 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 using XLead_Server.DTOs;
 using XLead_Server.Interfaces;
 
@@ -23,7 +25,7 @@ namespace XLead_Server.Controllers
         {
             var privileges = await _userPrivilegeRepository.GetPrivilegesByUserIdAsync(userId);
 
-
+           
             if (privileges == null)
             {
                 return NotFound($"Privileges for user ID {userId} not found or user does not exist.");

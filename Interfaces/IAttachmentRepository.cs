@@ -1,9 +1,13 @@
-﻿using XLead_Server.Models;
+﻿using XLead_Server.DTOs;
+using XLead_Server.Models;
 
 namespace XLead_Server.Interfaces
 {
     public interface IAttachmentRepository
     {
-        Task<IEnumerable<Attachment>> GetAllAttachments();
+        Task AddAsync(Attachment attachment);
+        void Update(Attachment attachment);
+        Task SaveAsync();
+        Task<IEnumerable<Attachment>> GetByDealIdAsync(long dealId);
     }
 }

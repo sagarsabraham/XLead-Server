@@ -9,11 +9,17 @@ namespace XLead_Server.Profiles
         public MappingProfile()
         {
             CreateMap<Privilege, PrivilegeReadDto>();
-            CreateMap<StageHistory, StageHistoryReadDto>()
-                .ForMember(dest => dest.StageName, opt => opt.MapFrom(src => src.DealStage != null ? src.DealStage.StageName : "Unknown Stage"));
+           
+            CreateMap<ContactUpdateDto, Contact>()
+           .ForMember(dest => dest.Id, opt => opt.Ignore())
+           .ForMember(dest => dest.CustomerId, opt => opt.Ignore())
+           .ForMember(dest => dest.CreatedBy, opt => opt.Ignore())
+           .ForMember(dest => dest.CreatedAt, opt => opt.Ignore());
 
-
-
+            CreateMap<CustomerUpdateDto, Customer>()
+                .ForMember(dest => dest.Id, opt => opt.Ignore())
+                .ForMember(dest => dest.CreatedBy, opt => opt.Ignore())
+                .ForMember(dest => dest.CreatedAt, opt => opt.Ignore());
             CreateMap<CustomerCreateDto, Customer>()
                  .ForMember(dest => dest.IsActive, opt => opt.MapFrom(src => true))
                  .ForMember(dest => dest.UpdatedBy, opt => opt.MapFrom(src => src.CreatedBy))
@@ -45,31 +51,7 @@ namespace XLead_Server.Profiles
                  .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => DateTime.UtcNow))
                  .ForMember(dest => dest.UpdatedAt, opt => opt.MapFrom(src => DateTime.UtcNow));
 
-            CreateMap<DealEditDto, Deal>()
-                 .ForMember(dest => dest.DealName, opt => opt.MapFrom(src => src.Title))
-                 .ForMember(dest => dest.DealAmount, opt => opt.MapFrom(src => src.Amount))
-                 .ForMember(dest => dest.AccountId, opt => opt.MapFrom(src => src.AccountId))
-                 .ForMember(dest => dest.RegionId, opt => opt.MapFrom(src => src.RegionId))
-                 .ForMember(dest => dest.DomainId, opt => opt.MapFrom(src => src.DomainId))
-                 .ForMember(dest => dest.DealStageId, opt => opt.MapFrom(src => src.DealStageId))
-                 .ForMember(dest => dest.RevenueTypeId, opt => opt.MapFrom(src => src.RevenueTypeId))
-                 .ForMember(dest => dest.DuId, opt => opt.MapFrom(src => src.DuId))
-                 .ForMember(dest => dest.CountryId, opt => opt.MapFrom(src => src.CountryId))
-                 .ForMember(dest => dest.ServiceLineId, opt => opt.MapFrom(src => src.ServiceId ?? 0))
-                 .ForMember(dest => dest.Description, opt => opt.MapFrom(src => src.Description))
-                 .ForMember(dest => dest.Probability, opt => opt.MapFrom(src => src.Probability))
-                 .ForMember(dest => dest.StartingDate, opt => opt.MapFrom(src => src.StartingDate))
-                 .ForMember(dest => dest.ClosingDate, opt => opt.MapFrom(src => src.ClosingDate))
-                 .ForMember(dest => dest.Id, opt => opt.Ignore()) 
-                 .ForMember(dest => dest.ContactId, opt => opt.Ignore()) 
-                 .ForMember(dest => dest.CreatedBy, opt => opt.Ignore())
-                 .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
-                 .ForMember(dest => dest.UpdatedBy, opt => opt.Ignore())
-                 .ForMember(dest => dest.UpdatedAt, opt => opt.Ignore())
-                 .ForMember(dest => dest.DealStageHistory, opt => opt.Ignore())
-                 .ForMember(dest => dest.Attachments, opt => opt.Ignore());
 
-            // Map Deal to DealReadDto
             CreateMap<Deal, DealReadDto>()
                 .ForMember(dest => dest.DealName, opt => opt.MapFrom(src => src.DealName))
                 .ForMember(dest => dest.DealAmount, opt => opt.MapFrom(src => src.DealAmount))
@@ -93,12 +75,38 @@ namespace XLead_Server.Profiles
                 .ForMember(dest => dest.ClosingDate, opt => opt.MapFrom(src => src.ClosingDate))
                 .ForMember(dest => dest.CreatedBy, opt => opt.MapFrom(src => src.CreatedBy))
                 .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => src.CreatedAt))
-                .ForMember(dest => dest.ServiceId, opt => opt.MapFrom(src => src.ServiceLineId)) 
+                .ForMember(dest => dest.ServiceId, opt => opt.MapFrom(src => src.ServiceLineId))
                 .ForMember(dest => dest.ServiceName, opt => opt.MapFrom(src => src.serviceLine != null ? src.serviceLine.ServiceName : null))
                 .ForMember(dest => dest.IsHidden, opt => opt.MapFrom(src => src.IsHidden));
+
+            CreateMap<AttachmentCreateDto, Attachment>();
+
+            CreateMap<Attachment, AttachmentReadDto>();
+
+            CreateMap<DealEditDto, Deal>()
+                 .ForMember(dest => dest.DealName, opt => opt.MapFrom(src => src.Title))
+                 .ForMember(dest => dest.DealAmount, opt => opt.MapFrom(src => src.Amount))
+                 .ForMember(dest => dest.AccountId, opt => opt.MapFrom(src => src.AccountId))
+                 .ForMember(dest => dest.RegionId, opt => opt.MapFrom(src => src.RegionId))
+                 .ForMember(dest => dest.DomainId, opt => opt.MapFrom(src => src.DomainId))
+                 .ForMember(dest => dest.DealStageId, opt => opt.MapFrom(src => src.DealStageId))
+                 .ForMember(dest => dest.RevenueTypeId, opt => opt.MapFrom(src => src.RevenueTypeId))
+                 .ForMember(dest => dest.DuId, opt => opt.MapFrom(src => src.DuId))
+                 .ForMember(dest => dest.CountryId, opt => opt.MapFrom(src => src.CountryId))
+                 .ForMember(dest => dest.ServiceLineId, opt => opt.MapFrom(src => src.ServiceId ?? 0))
+                 .ForMember(dest => dest.Description, opt => opt.MapFrom(src => src.Description))
+                 .ForMember(dest => dest.Probability, opt => opt.MapFrom(src => src.Probability))
+                 .ForMember(dest => dest.StartingDate, opt => opt.MapFrom(src => src.StartingDate))
+                 .ForMember(dest => dest.ClosingDate, opt => opt.MapFrom(src => src.ClosingDate))
+                 .ForMember(dest => dest.Id, opt => opt.Ignore())
+                 .ForMember(dest => dest.ContactId, opt => opt.Ignore())
+                 .ForMember(dest => dest.CreatedBy, opt => opt.Ignore())
+                 .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
+                 .ForMember(dest => dest.UpdatedBy, opt => opt.Ignore())
+                 .ForMember(dest => dest.UpdatedAt, opt => opt.Ignore())
+                 .ForMember(dest => dest.DealStageHistory, opt => opt.Ignore())
+                 .ForMember(dest => dest.Attachments, opt => opt.Ignore());
         }
-
-
     }
 
     }

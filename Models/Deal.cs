@@ -18,11 +18,11 @@
         public long ContactId { get; set; }
         public DateTime StartingDate { get; set; }
         public DateTime ClosingDate { get; set; }
+        public bool? IsHidden { get; set; }
         public long CreatedBy { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public long? UpdatedBy { get; set; }
         public DateTime? UpdatedAt { get; set; }
-        public bool IsHidden { get; set; }
 
         public User Creator { get; set; }
         public Account account { get; set; }
@@ -34,9 +34,9 @@
         public Country country { get; set; }
         public Contact contact { get; set; }
         public ServiceLine serviceLine { get; set; }
-        
 
         public ICollection<StageHistory> DealStageHistory { get; set; } = new List<StageHistory>();
         public ICollection<Attachment> Attachments { get; set; } = new List<Attachment>();
+        public ICollection<Note> Notes { get; set; }
     }
 }

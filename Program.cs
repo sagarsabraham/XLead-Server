@@ -3,6 +3,7 @@ using Microsoft.Extensions.FileProviders;
 using XLead_Server.Data;
 using XLead_Server.Interfaces;
 using XLead_Server.Repositories;
+using XLead_Server.Services;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -32,6 +33,12 @@ builder.Services.AddDbContext<ApiDbContext>(option =>
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+builder.Services.AddScoped<IDbSchemaRepository, DbSchemaRepository>();
+builder.Services.AddScoped<IAiQueryGeneratorRepository, AiQueryGeneratorRepository>();
+builder.Services.AddScoped<ISqlValidationService, SqlValidationService>();
+builder.Services.AddScoped<IDataQueryRepository, DapperDataQueryRepository>();
+
 builder.Services.AddScoped<INoteRepository, NoteRepository>();
 builder.Services.AddScoped<IAttachmentRepository, AttachmentRepository>();
 builder.Services.AddScoped<IUserPrivilegeRepository, UserPrivilegeRepository>();
@@ -47,6 +54,13 @@ builder.Services.AddScoped<IAccountRepository, AccountRepository>();
 builder.Services.AddScoped<IDomainRepository, DomainRepository>();
 builder.Services.AddScoped<IDealStageRepository, DealStageRepository>();
 builder.Services.AddScoped<IRegionRepository, RegionRepository>();
+
+builder.Services.AddHttpClient("OpenAIClient", client =>
+{
+    // BaseAddress could be set here if endpoint is fixed, but AiQueryGeneratorService uses full path
+    // client.Timeout = TimeSpan.FromSeconds(60); // Optional: set a default timeout
+});
+
 builder.Services.AddAutoMapper(typeof(Program));
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 
@@ -59,9 +73,16 @@ builder.Services.AddLogging(logging =>
 
 var app = builder.Build();
 
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(
+        Path.Combine(builder.Environment.ContentRootPath, "UploadedFiles")), // Use builder.Environment instead of env
+    RequestPath = "/UploadedFiles" // This makes them accessible via /UploadedFiles URL path
+});
 
 if (app.Environment.IsDevelopment())
 {
+    builder.Configuration.AddUserSecrets<Program>();
     app.UseSwagger();
     app.UseSwaggerUI();
 }

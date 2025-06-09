@@ -1,8 +1,7 @@
-﻿
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Threading.Tasks;
-using XLead_Server.DTOs; 
-using XLead_Server.Models; 
+using XLead_Server.DTOs;
+using XLead_Server.Models;
 
 namespace XLead_Server.Interfaces
 {
@@ -11,12 +10,9 @@ namespace XLead_Server.Interfaces
         Task<Customer> AddCustomerAsync(CustomerCreateDto dto);
         Task<Customer?> GetByNameAsync(string customerName);
         Task<Dictionary<string, CustomerContactMapDto>> GetCustomerContactMapAsync();
-     
+        Task<IEnumerable<CustomerReadDto>> GetAllCustomersAsync();
+        Task<Customer?> UpdateCustomerAsync(long id, CustomerUpdateDto dto);
 
-        Task<IEnumerable<CustomerReadDto>> GetAllCustomersAsync(long requestingUserId);
-        Task<Customer?> GetCustomerByIdAsync(long id); 
-        Task<Customer?> UpdateCustomerAsync(long id, CustomerUpdateDto dto); 
-        Task<Customer?> SoftDeleteCustomerAsync(long id, long performingUserId);
-
+        Task<Customer?> SoftDeleteCustomerAsync(long id);
     }
-}   
+}

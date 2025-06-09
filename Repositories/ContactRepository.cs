@@ -1,9 +1,12 @@
-﻿
-using AutoMapper;
+﻿using AutoMapper;
 using Microsoft.EntityFrameworkCore;
 using XLead_Server.Data;
 using XLead_Server.DTOs;
+using XLead_Server.Helpers;
 using XLead_Server.Interfaces;
+
+
+
 using XLead_Server.Models;
 
 namespace XLead_Server.Repositories
@@ -12,40 +15,53 @@ namespace XLead_Server.Repositories
     {
         private readonly ApiDbContext _context;
         private readonly IMapper _mapper;
-        private readonly IUserPrivilegeRepository _userPrivilegeRepository; 
-        private readonly ILogger<ContactRepository> _logger;
 
-        public ContactRepository(ApiDbContext context, IMapper mapper, IUserPrivilegeRepository userPrivilegeRepository, ILogger<ContactRepository> logger)
+        public ContactRepository(ApiDbContext context, IMapper mapper)
         {
             _context = context;
             _mapper = mapper;
-            _userPrivilegeRepository = userPrivilegeRepository;
-            _logger = logger;
         }
-        private async Task<List<long>> GetRelevantCreatorIdsAsync(long requestingUserId, string overviewPrivilegeName)
+        private async Task ValidateGlobalContactUniqueness(string email, string phoneNumber, long? contactIdToExclude = null)
         {
-            var privileges = await _userPrivilegeRepository.GetPrivilegesByUserIdAsync(requestingUserId);
-            bool hasOverviewPrivilege = privileges?.Any(p => p.PrivilegeName == overviewPrivilegeName) ?? false;
+            
+            if (!string.IsNullOrWhiteSpace(email))
+            {
+                var normalizedEmail = email.Trim().ToUpper();
+                var contactEmailQuery = _context.Contacts.AsQueryable();
+                if (contactIdToExclude.HasValue) contactEmailQuery = contactEmailQuery.Where(c => c.Id != contactIdToExclude.Value);
 
-            if (hasOverviewPrivilege)
-            {
-                _logger.LogInformation("User {RequestingUserId} has '{OverviewPrivilegeName}'. Fetching data for subordinates.", requestingUserId, overviewPrivilegeName);
-                var subordinateIds = await _context.Users
-                    .Where(u => u.AssignedTo == requestingUserId)
-                    .Select(u => u.Id)
-                    .ToListAsync();
-                return subordinateIds;
+                if (await contactEmailQuery.AnyAsync(c => c.Email.ToUpper() == normalizedEmail))
+                {
+                    throw new ArgumentException($"The email '{email}' is already in use by another contact.");
+                }
             }
-            else
+
+        
+            if (!string.IsNullOrWhiteSpace(phoneNumber))
             {
-                _logger.LogInformation("User {RequestingUserId} does not have '{OverviewPrivilegeName}'. Fetching own data.", requestingUserId, overviewPrivilegeName);
-                return new List<long> { requestingUserId };
+                var normalizedPhone = NormalizationHelper.NormalizePhoneNumber(phoneNumber);
+
+                var contactPhoneQuery = _context.Contacts.AsQueryable();
+                if (contactIdToExclude.HasValue) contactPhoneQuery = contactPhoneQuery.Where(c => c.Id != contactIdToExclude.Value);
+                if (await contactPhoneQuery.AnyAsync(c => EF.Functions.Like(c.PhoneNumber.Replace("-", "").Replace("(", "").Replace(")", "").Replace(" ", ""), $"%{normalizedPhone}%")))
+                {
+                    throw new ArgumentException($"The phone number '{phoneNumber}' is already in use by another contact.");
+                }
+
+                
+                if (await _context.Customers.AnyAsync(c => EF.Functions.Like(c.CustomerPhoneNumber.Replace("-", "").Replace("(", "").Replace(")", "").Replace(" ", ""), $"%{normalizedPhone}%")))
+                {
+                    throw new ArgumentException($"The phone number '{phoneNumber}' is already in use by a customer.");
+                }
             }
         }
 
+       
         public async Task<Contact> AddContactAsync(ContactCreateDto dto)
+
         {
-            Console.WriteLine($"Received Designation: {dto.Designation}");
+            await ValidateGlobalContactUniqueness(dto.Email, dto.PhoneNumber);
+           
             var contact = _mapper.Map<Contact>(dto);
             contact.CreatedAt = DateTime.UtcNow;
             contact.IsActive = true;
@@ -55,25 +71,15 @@ namespace XLead_Server.Repositories
             return contact;
         }
 
-       
-        public async Task<IEnumerable<ContactReadDto>> GetAllContactsAsync(long requestingUserId)
+        public async Task<IEnumerable<ContactReadDto>> GetAllContactsAsync()
         {
             
-            var relevantCreatorIds = await GetRelevantCreatorIdsAsync(requestingUserId, "ViewTeamContacts"); 
-
-            if (!relevantCreatorIds.Any())
-            {
-                _logger.LogInformation("No relevant creator IDs for contacts for user {RequestingUserId}.", requestingUserId);
-                return Enumerable.Empty<ContactReadDto>();
-            }
-
-            _logger.LogInformation("Fetching contacts created by User IDs: [{RelevantCreatorIds}] for Requesting User: {RequestingUserId}", string.Join(",", relevantCreatorIds), requestingUserId);
             var contacts = await _context.Contacts
-                .Where(c => (c.IsHidden == null || c.IsHidden == false) &&
-                             relevantCreatorIds.Contains(c.CreatedBy)) 
+                .Where(c => c.IsHidden != true)
                 .ToListAsync();
             return _mapper.Map<IEnumerable<ContactReadDto>>(contacts);
         }
+
         public async Task<Contact?> GetByFullNameAndCustomerIdAsync(string firstName, string? lastName, long customerId)
         {
             return await _context.Contacts
@@ -81,66 +87,52 @@ namespace XLead_Server.Repositories
                                          (lastName == null || c.LastName == lastName) &&
                                          c.CustomerId == customerId);
         }
-      
-        public async Task<Contact?> GetContactByIdAsync(long id)
-        {
-            _logger.LogInformation("Fetching contact entity with ID: {ContactId}", id);
-            
-            return await _context.Contacts.AsNoTracking().FirstOrDefaultAsync(c => c.Id == id && (c.IsHidden == null || c.IsHidden == false));
-        }
 
-       
         public async Task<Contact?> UpdateContactAsync(long id, ContactUpdateDto dto)
         {
-            _logger.LogInformation("Attempting to update contact ID {ContactId} by User ID {PerformingUserId}", id, dto.UpdatedBy);
-            var existingContact = await _context.Contacts.FirstOrDefaultAsync(c => c.Id == id);
+            var existingContact = await _context.Contacts.FindAsync(id);
 
-            if (existingContact == null || existingContact.IsHidden == true) 
+            if (existingContact == null)
             {
-                _logger.LogWarning("Contact with ID {ContactId} not found or is hidden, cannot update.", id);
                 return null;
             }
 
-           
-            _mapper.Map(dto, existingContact);
+            await ValidateGlobalContactUniqueness(dto.Email, dto.PhoneNumber, id);
 
-            existingContact.UpdatedBy = dto.UpdatedBy; 
+            existingContact.FirstName = dto.FirstName;
+            existingContact.LastName = dto.LastName;
+            existingContact.Designation = dto.Designation;
+            existingContact.Email = dto.Email;
+            existingContact.PhoneNumber = dto.PhoneNumber;
+            existingContact.IsActive = dto.IsActive;
             existingContact.UpdatedAt = DateTime.UtcNow;
+            existingContact.UpdatedBy = dto.UpdatedBy;
 
-            try
-            {
-                await _context.SaveChangesAsync();
-                _logger.LogInformation("Successfully updated contact ID {ContactId}", id);
-            }
-            catch (DbUpdateException ex)
-            {
-                _logger.LogError(ex, "Database update error while updating contact ID {ContactId}", id);
-                throw; 
-            }
+
+            await _context.SaveChangesAsync();
             return existingContact;
+
+            
         }
 
-    
-        public async Task<Contact?> SoftDeleteContactAsync(long id, long performingUserId)
+        public async Task<Contact?> SoftDeleteContactAsync(long id)
         {
-            _logger.LogInformation("Attempting to soft delete contact ID {ContactId} by User ID {PerformingUserId}", id, performingUserId);
-            var contactToDelete = await _context.Contacts.FirstOrDefaultAsync(c => c.Id == id);
-
-            if (contactToDelete == null || contactToDelete.IsHidden == true) 
+            var contactToDelete = await _context.Contacts.FindAsync(id);
+            if (contactToDelete == null)
             {
-                _logger.LogWarning("Contact with ID {ContactId} not found or already hidden, cannot soft delete.", id);
                 return null;
             }
 
             contactToDelete.IsHidden = true;
-            contactToDelete.IsActive = false; 
-            contactToDelete.UpdatedBy = performingUserId;
+            contactToDelete.IsActive = false;
             contactToDelete.UpdatedAt = DateTime.UtcNow;
 
+
             await _context.SaveChangesAsync();
-            _logger.LogInformation("Successfully soft-deleted contact ID {ContactId}", id);
             return contactToDelete;
         }
 
     }
+
+
 }

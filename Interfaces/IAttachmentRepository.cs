@@ -1,4 +1,5 @@
-﻿using XLead_Server.Models;
+﻿using XLead_Server.DTOs;
+using XLead_Server.Models;
 
 namespace XLead_Server.Interfaces
 {

@@ -1,7 +1,4 @@
-﻿
-
-
-namespace XLead_Server.Models
+﻿namespace XLead_Server.Models
 {
     public class Deal
     {
@@ -38,10 +35,9 @@ namespace XLead_Server.Models
         public Country country { get; set; }
         public Contact contact { get; set; }
         public ServiceLine serviceLine { get; set; }
-        public ICollection<Note> Notes { get; set; }= new List<Note>();
+        
         public ICollection<StageHistory> DealStageHistory { get; set; } = new List<StageHistory>();
         public ICollection<Attachment> Attachments { get; set; } = new List<Attachment>();
-   
-
+        public ICollection<Note> Notes { get; set; }
     }
 }

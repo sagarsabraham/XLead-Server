@@ -1,60 +1,95 @@
-﻿using AutoMapper;
-using Microsoft.AspNetCore.Mvc;
-using XLead_Server.DTOs;
-using XLead_Server.Interfaces;
+﻿using Microsoft.AspNetCore.Mvc;
+using XLead_Server.Data;
 using XLead_Server.Models;
+using XLead_Server.Interfaces;
+using XLead_Server.DTOs;
+
+using AutoMapper;
 
 namespace XLead_Server.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class AttachmentController : ControllerBase
+    public class AttachmentsController : ControllerBase
     {
         private readonly IAttachmentRepository _attachmentRepository;
+        private readonly IWebHostEnvironment _env;
         private readonly IMapper _mapper;
 
-        public AttachmentController(IAttachmentRepository attachmentRepository, IMapper mapper)
+        public AttachmentsController(
+            IAttachmentRepository attachmentRepository,
+            IWebHostEnvironment env,
+            IMapper mapper)
         {
             _attachmentRepository = attachmentRepository;
+            _env = env;
             _mapper = mapper;
         }
 
-        [HttpPost]
-        public async Task<IActionResult> AddAttachment([FromBody] AttachmentCreateDto dto)
+        [HttpGet("deal/{dealId}")]
+        public async Task<ActionResult<IEnumerable<AttachmentReadDto>>> GetAttachmentsForDeal(long dealId)
         {
+            var attachments = await _attachmentRepository.GetByDealIdAsync(dealId);
+
+            return Ok(_mapper.Map<IEnumerable<AttachmentReadDto>>(attachments));
+        }
+
+        [HttpPost("upload")]
+        public async Task<ActionResult<AttachmentReadDto>> UploadAttachment([FromForm] IFormFile file, [FromForm] long dealId)
+        {
+            if (dealId <= 0)
+            {
+                return BadRequest(new { message = "A valid DealId is required." });
+            }
+            if (file == null || file.Length == 0)
+            {
+                return BadRequest(new { message = "No file uploaded or file is empty." });
+            }
+
+            Console.WriteLine($"Received upload request for Deal ID: {dealId} with file: {file.FileName} ({file.Length} bytes)");
+
+            var attachment = new Attachment
+            {
+                FileName = file.FileName,
+                S3UploadName = "",
+                DealId = dealId,
+                CreatedAt = DateTime.UtcNow,
+                CreatedBy = 1
+            };
+
+            await _attachmentRepository.AddAsync(attachment);
+            await _attachmentRepository.SaveAsync();
+
+            string fileExtension = Path.GetExtension(file.FileName);
+            string uniqueFileName = $"{attachment.Id}{fileExtension}";
+
+            attachment.S3UploadName = uniqueFileName;
+            _attachmentRepository.Update(attachment);
+            await _attachmentRepository.SaveAsync();
+
+            var uploadsFolderPath = Path.Combine(_env.ContentRootPath, "UploadedFiles");
+            if (!Directory.Exists(uploadsFolderPath))
+            {
+                Directory.CreateDirectory(uploadsFolderPath);
+            }
+            var filePath = Path.Combine(uploadsFolderPath, uniqueFileName);
+
             try
             {
-                // Step 1: Map to Entity & save to generate Id
-                var attachment = _mapper.Map<Attachment>(dto);
-                attachment.CreatedAt = DateTime.UtcNow;
-
-                await _attachmentRepository.AddAsync(attachment);
-                await _attachmentRepository.SaveAsync(); // Commit to get Id
-
-                // Step 2: Generate S3UploadName
-                var extension = Path.GetExtension(attachment.FileName);
-                attachment.S3UploadName = $"{attachment.Id}{extension}";
-
-                _attachmentRepository.Update(attachment);
-                await _attachmentRepository.SaveAsync();
-
-                // Step 3: Map to read DTO and return
-                var resultDto = _mapper.Map<AttachmentReadDto>(attachment);
-                return Ok(resultDto);
+                using (var stream = new FileStream(filePath, FileMode.Create))
+                {
+                    await file.CopyToAsync(stream);
+                }
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Error saving attachment: {ex.Message}");
+                Console.WriteLine($"Error saving file {uniqueFileName}: {ex.Message}");
+                return StatusCode(StatusCodes.Status500InternalServerError, "Error saving the uploaded file.");
             }
-        }
 
-        // Optional: GET endpoint for attachments
-        [HttpGet("deal/{dealId}")]
-        public async Task<IActionResult> GetAttachmentsByDeal(long dealId)
-        {
-            var attachments = await _attachmentRepository.GetByDealIdAsync(dealId);
-            var resultDtos = _mapper.Map<List<AttachmentReadDto>>(attachments);
-            return Ok(resultDtos);
+            var attachmentDto = _mapper.Map<AttachmentReadDto>(attachment);
+
+            return CreatedAtAction(nameof(GetAttachmentsForDeal), new { dealId = attachmentDto.DealId }, attachmentDto);
         }
     }
 }

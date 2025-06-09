@@ -33,6 +33,7 @@ namespace XLead_Server.Data
         public DbSet<IndustrialVertical> IndustrialVerticals { get; set; }
         public DbSet<ServiceLine> ServiceLines { get; set; }
         public DbSet<Note> Notes { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             // User Relationships
@@ -62,6 +63,25 @@ namespace XLead_Server.Data
                 .HasForeignKey(a => a.CreatedBy)
                 .OnDelete(DeleteBehavior.Restrict);
             });
+            modelBuilder.Entity<Note>(entity =>
+            {
+                entity.HasOne(n => n.Deal)
+                .WithMany(d => d.Notes)
+                .HasForeignKey(n => n.DealId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(n => n.Creator)
+                    .WithMany(u => u.CreatedNotes)
+                    .HasForeignKey(n => n.CreatedBy)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(n => n.Updater)
+                    .WithMany(u => u.UpdatedNotes)
+                    .HasForeignKey(n => n.UpdatedBy)
+                    .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            //Note Relationships
             modelBuilder.Entity<Note>(entity =>
             {
                 entity.HasOne(n => n.Deal)

@@ -1,5 +1,4 @@
-﻿
-namespace XLead_Server.DTOs
+﻿namespace XLead_Server.DTOs
 {
     public class ContactReadDto
     {
@@ -10,6 +9,6 @@ namespace XLead_Server.DTOs
         public string? PhoneNumber { get; set; }
         public string? Designation { get; set; }
         public long CustomerId { get; set; }
-        public bool IsActive { get; set; } 
+        public bool IsActive { get; set; }
     }
 }

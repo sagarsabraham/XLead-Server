@@ -8,7 +8,6 @@ namespace XLead_Server.DTOs
         public long Id { get; set; }
         public string DealName { get; set; }
         public decimal DealAmount { get; set; }
-        //public string SalespersonName { get; set; }
         public long? AccountId { get; set; }
         public string? AccountName { get; set; }
         public long? RegionId { get; set; }
@@ -27,6 +26,9 @@ namespace XLead_Server.DTOs
         public string? StageName { get; set; }
         public long ContactId { get; set; }
         public string? ContactName { get; set; }
+        public long? ServiceId { get; set; }
+        public string? ServiceName { get; set; }
+        public bool IsHidden { get; set; }
         public DateTime? StartingDate { get; set; }
         public DateTime? ClosingDate { get; set; }
         public long CreatedBy { get; set; }

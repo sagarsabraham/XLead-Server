@@ -1,5 +1,4 @@
-﻿// DTOs/DashboardDtos.cs
-namespace XLead_Server.DTOs
+﻿namespace XLead_Server.DTOs
 {
     public class DashboardMetricItemDto
     {

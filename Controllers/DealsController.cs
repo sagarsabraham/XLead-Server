@@ -139,7 +139,7 @@ namespace XLead_Server.Controllers
 
 
             var privileges = await _userPrivilegeRepository.GetPrivilegesByUserIdAsync(managerId);
-            if (privileges == null || !privileges.Any(p => p.PrivilegeName == "overview"))
+            if (privileges == null || !privileges.Any(p => p.PrivilegeName == "Overview"))
             {
                 _logger.LogWarning("User with ID {ManagerIdFromRoute} lacks 'Overview' privilege or does not exist.", managerId);
                 return Forbid($"User ID {managerId} lacks the required 'Overview' privilege to view this data.");
@@ -167,7 +167,7 @@ namespace XLead_Server.Controllers
 
 
             var privileges = await _userPrivilegeRepository.GetPrivilegesByUserIdAsync(managerId);
-            if (privileges == null || !privileges.Any(p => p.PrivilegeName == "overview"))
+            if (privileges == null || !privileges.Any(p => p.PrivilegeName == "Overview"))
             {
                 _logger.LogWarning("User with ID {ManagerIdFromRoute} lacks 'Overview' privilege for stage counts or does not exist.", managerId);
                 return Forbid($"User ID {managerId} lacks the required 'Overview' privilege to view this data.");

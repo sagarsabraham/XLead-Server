@@ -69,20 +69,20 @@ namespace XLead_Server.Controllers
             return Ok(deals);
         }
 
-        // In DealsController.cs - UpdateDealStage method
+      
         [HttpPut("{id}/stage")]
         [ProducesResponseType(typeof(DealReadDto), 200)]
         [ProducesResponseType(403)]
         [ProducesResponseType(404)]
         public async Task<IActionResult> UpdateDealStage(long id, [FromBody] DealUpdateDTO dto)
         {
-            // Handle null UpdatedBy
+            
             if (!dto.UpdatedBy.HasValue)
             {
                 return BadRequest("UpdatedBy is required");
             }
 
-            // Check privileges using UpdatedBy from DTO
+            
             var privileges = await _userPrivilegeRepository.GetPrivilegesByUserIdAsync(dto.UpdatedBy.Value);
             if (!privileges.Any(p => p.PrivilegeName == "UpdateDealStage" || p.PrivilegeName == "PipelineDetailAccess"))
             {
@@ -99,6 +99,8 @@ namespace XLead_Server.Controllers
 
             return Ok(updatedDeal);
         }
+
+
         [HttpPost]
         [ProducesResponseType(typeof(DealReadDto), 201)]
         [ProducesResponseType(400)]
@@ -106,7 +108,7 @@ namespace XLead_Server.Controllers
         [ProducesResponseType(500)]
         public async Task<ActionResult<DealReadDto>> CreateDeal([FromBody] DealCreateDto dto)
         {
-            // Check privileges
+            
             var privileges = await _userPrivilegeRepository.GetPrivilegesByUserIdAsync(dto.CreatedBy);
             if (!privileges.Any(p => p.PrivilegeName == "CreateDeal" || p.PrivilegeName == "PipelineDetailAccess"))
             {
@@ -154,6 +156,8 @@ namespace XLead_Server.Controllers
             }
         }
 
+
+
         [HttpGet("{id}/stage-history")]
         [ProducesResponseType(typeof(IEnumerable<StageHistoryDto>), 200)]
         [ProducesResponseType(403)]
@@ -175,6 +179,36 @@ namespace XLead_Server.Controllers
                 return NotFound($"No stage history found for deal with ID {id}.");
             }
             return Ok(history);
+        }
+
+        [HttpPut("{id}/description")]
+        [ProducesResponseType(typeof(DealReadDto), 200)]
+        [ProducesResponseType(403)]
+        [ProducesResponseType(404)]
+        public async Task<IActionResult> UpdateDealDescription(long id, [FromBody] DealDescriptionUpdateDto dto)
+        {
+            
+            if (!dto.UpdatedBy.HasValue)
+            {
+                return BadRequest("UpdatedBy is required");
+            }
+
+            // Check privileges using UpdatedBy from DTO
+            var privileges = await _userPrivilegeRepository.GetPrivilegesByUserIdAsync(dto.UpdatedBy.Value);
+            if (!privileges.Any(p => p.PrivilegeName == "UpdateDealDescription" || p.PrivilegeName == "UpdateDeal" || p.PrivilegeName == "PipelineDetailAccess"))
+            {
+                _logger.LogWarning($"User {dto.UpdatedBy.Value} lacks UpdateDeal privilege");
+                return Forbid("User lacks UpdateDeal privilege");
+            }
+
+            _logger.LogInformation($"User {dto.UpdatedBy.Value} updating description for deal {id}");
+            var updatedDeal = await _dealRepository.UpdateDealDescriptionAsync(id, dto);
+            if (updatedDeal == null)
+            {
+                return NotFound($"Deal with ID {id} not found.");
+            }
+
+            return Ok(updatedDeal);
         }
     }
 }

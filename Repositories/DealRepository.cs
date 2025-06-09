@@ -40,7 +40,7 @@ namespace XLead_Server.Repositories
         {
             try
             {
-                // Validate required foreign keys exist
+                
                 if (dto.RegionId.HasValue && !await _context.Regions.AnyAsync(r => r.Id == dto.RegionId.Value))
                     throw new InvalidOperationException($"Region with ID {dto.RegionId.Value} does not exist.");
                 if (dto.DealStageId.HasValue && !await _context.DealStages.AnyAsync(ds => ds.Id == dto.DealStageId.Value))
@@ -52,7 +52,7 @@ namespace XLead_Server.Repositories
                 if (dto.CountryId.HasValue && !await _context.Countries.AnyAsync(c => c.Id == dto.CountryId.Value))
                     throw new InvalidOperationException($"Country with ID {dto.CountryId.Value} does not exist.");
 
-                // 1. Find or Create Customer
+              
                 Customer? customer = await _customerRepository.GetByNameAsync(dto.CustomerName);
                 if (customer == null)
                 {
@@ -70,7 +70,6 @@ namespace XLead_Server.Repositories
                     }
                 }
 
-                // 2. Find or Create Contact
                 string firstName;
                 string? lastName = null;
                 var nameParts = dto.ContactFullName.Trim().Split(new[] { ' ' }, 2, StringSplitOptions.RemoveEmptyEntries);
@@ -104,7 +103,7 @@ namespace XLead_Server.Repositories
                 }
                 else
                 {
-                    // Update existing contact with new details if provided
+                   
                     contact.Email = dto.ContactEmail ?? contact.Email;
                     contact.PhoneNumber = dto.ContactPhoneNumber ?? contact.PhoneNumber;
                     contact.Designation = dto.ContactDesignation ?? contact.Designation;
@@ -117,7 +116,7 @@ namespace XLead_Server.Repositories
                     throw new InvalidOperationException($"Contact '{dto.ContactFullName}' for customer '{customer.CustomerName}' has an invalid ID after creation/retrieval.");
                 }
 
-                // 3. Create Deal entity using AutoMapper
+             
                 var deal = _mapper.Map<Deal>(dto);
                 deal.ContactId = contact.Id;
 
@@ -129,12 +128,12 @@ namespace XLead_Server.Repositories
             catch (DbUpdateException dbEx)
             {
                 var innerMessage = dbEx.InnerException?.Message ?? dbEx.Message;
-                Console.WriteLine($"Database error: {innerMessage}"); // Use Console.WriteLine instead
+                Console.WriteLine($"Database error: {innerMessage}"); 
                 throw new InvalidOperationException($"Database error: {innerMessage}", dbEx);
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error in AddDealAsync: {ex.Message}"); // Use Console.WriteLine instead
+                Console.WriteLine($"Error in AddDealAsync: {ex.Message}"); 
                 throw;
             }
         }
@@ -177,17 +176,17 @@ namespace XLead_Server.Repositories
 
         public async Task<DealReadDto?> UpdateDealStageAsync(long id, DealUpdateDTO dto)
         {
-            // 1. Find the deal by ID
+            
             var deal = await _context.Deals
                 .Include(d => d.dealStage)
                 .FirstOrDefaultAsync(d => d.Id == id);
 
             if (deal == null)
             {
-                return null; // Deal not found
+                return null; 
             }
 
-            // 2. Find the stage by StageName
+           
             var newStage = await _context.DealStages
                 .FirstOrDefaultAsync(s => s.StageName == dto.StageName);
 
@@ -196,29 +195,27 @@ namespace XLead_Server.Repositories
                 throw new InvalidOperationException($"Stage '{dto.StageName}' not found.");
             }
 
-            // 3. Check if stage is actually changing
             if (deal.DealStageId != newStage.Id)
             {
-                // 4. Create stage history record
+               
                 var stageHistory = new StageHistory
                 {
                     DealId = deal.Id,
                     DealStageId = newStage.Id,
-                    CreatedBy = dto.UpdatedBy ?? 1, // You should pass the current user ID
+                    CreatedBy = dto.UpdatedBy ?? 1, 
                     CreatedAt = DateTime.UtcNow
                 };
                 _context.StageHistories.Add(stageHistory);
 
-                // 5. Update the deal's stage
+            
                 deal.DealStageId = newStage.Id;
                 deal.UpdatedAt = DateTime.UtcNow;
                 deal.UpdatedBy = dto.UpdatedBy;
             }
 
-            // 6. Save changes to the database
             await _context.SaveChangesAsync();
 
-            // 7. Retrieve the updated deal with all related data
+         
             return await GetDealByIdAsync(deal.Id);
         }
 
@@ -242,6 +239,29 @@ namespace XLead_Server.Repositories
                 .ToListAsync();
 
             return history;
+        }
+
+        public async Task<DealReadDto?> UpdateDealDescriptionAsync(long id, DealDescriptionUpdateDto dto)
+        {
+           
+            var deal = await _context.Deals
+                .FirstOrDefaultAsync(d => d.Id == id);
+
+            if (deal == null)
+            {
+                return null; 
+            }
+
+           
+            deal.Description = dto.Description;
+            deal.UpdatedAt = DateTime.UtcNow;
+            deal.UpdatedBy = dto.UpdatedBy;
+
+           
+            await _context.SaveChangesAsync();
+
+           
+            return await GetDealByIdAsync(deal.Id);
         }
     }
     }

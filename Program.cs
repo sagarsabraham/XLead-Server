@@ -46,6 +46,7 @@ builder.Services.AddScoped<IAccountRepository, AccountRepository>();
 builder.Services.AddScoped<IDomainRepository, DomainRepository>();
 builder.Services.AddScoped<IDealStageRepository, DealStageRepository>();
 builder.Services.AddScoped<IRegionRepository, RegionRepository>();
+builder.Services.AddScoped<INoteRepository, NoteRepository>();
 builder.Services.AddAutoMapper(typeof(Program)); // Scans current assembly for profiles
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 

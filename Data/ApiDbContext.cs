@@ -29,7 +29,10 @@ namespace XLead_Server.Data
         public DbSet<IndustrialVertical> IndustrialVerticals { get; set; }
         public DbSet<ServiceLine> ServiceLines { get; set; }
 
-protected override void OnModelCreating(ModelBuilder modelBuilder)
+        public DbSet<Note> Notes { get; set; }
+
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             // User Relationships
             modelBuilder.Entity<User>(entity =>
@@ -304,6 +307,25 @@ protected override void OnModelCreating(ModelBuilder modelBuilder)
                 .WithOne(d => d.revenueType)
                 .HasForeignKey(d => d.RevenueTypeId)
                 .OnDelete(DeleteBehavior.Restrict);
+            });
+
+
+            modelBuilder.Entity<Note>(entity =>
+            {
+                entity.HasOne(n => n.Deal)
+                .WithMany(d => d.Notes)
+                .HasForeignKey(n => n.DealId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(n => n.Creator)
+                    .WithMany(u => u.CreatedNotes)
+                    .HasForeignKey(n => n.CreatedBy)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(n => n.Updater)
+                    .WithMany(u => u.UpdatedNotes)
+                    .HasForeignKey(n => n.UpdatedBy)
+                    .OnDelete(DeleteBehavior.Restrict);
             });
         }
     }

@@ -13,5 +13,7 @@ namespace XLead_Server.Interfaces
 
         Task<DealReadDto> UpdateDealStageAsync(long id, DealUpdateDTO dealUpdateDto);
         Task<IEnumerable<StageHistoryDto>> GetDealStageHistoryAsync(long dealId);
+
+        Task<DealReadDto?> UpdateDealDescriptionAsync(long id, DealDescriptionUpdateDto dto);
     }
 }

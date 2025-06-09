@@ -39,5 +39,8 @@ namespace XLead_Server.Models
         public ICollection<IndustrialVertical> CreatedIndustrialVerticals { get; set; } = new List<IndustrialVertical>();
         public ICollection<ServiceLine> CreatedServiceLines { get; set; } = new List<ServiceLine>();
         public ICollection<RevenueType> CreatedRevenueTypes { get; set; } = new List<RevenueType>();
+
+        public ICollection<Note> CreatedNotes { get; set; }
+        public ICollection<Note> UpdatedNotes { get; set; }
     }
 }

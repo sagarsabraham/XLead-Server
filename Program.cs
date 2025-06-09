@@ -6,12 +6,11 @@ using XLead_Server.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAngularApp",
         policy => policy
-            .WithOrigins("http://localhost:4200") // <-- your Angular frontend URL
+            .WithOrigins("http://localhost:4200") 
             .AllowAnyMethod()
             .AllowAnyHeader()
             .AllowCredentials());
@@ -46,9 +45,8 @@ builder.Services.AddScoped<IAccountRepository, AccountRepository>();
 builder.Services.AddScoped<IDomainRepository, DomainRepository>();
 builder.Services.AddScoped<IDealStageRepository, DealStageRepository>();
 builder.Services.AddScoped<IRegionRepository, RegionRepository>();
-builder.Services.AddAutoMapper(typeof(Program)); // Scans current assembly for profiles
+builder.Services.AddAutoMapper(typeof(Program)); 
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
-// Ensure logging is configured
 builder.Services.AddLogging(logging =>
 {
     logging.ClearProviders();
@@ -59,13 +57,11 @@ builder.Services.AddLogging(logging =>
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
-// Use CORS
 app.UseCors("AllowAll");
 app.UseCors("AllowAngularApp");
 app.UseHttpsRedirection();

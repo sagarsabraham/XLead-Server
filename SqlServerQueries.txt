@@ -151,6 +151,19 @@ VALUES
 
 
 
+//-------------- 07-06-2025 -----------------------///
+
+select * from Privileges
+select * from UsersPrivileges
+select * from Deals
+select * from DealStages
+SELECT Id, StageName FROM DealStages;
+select * from Customers
+SELECT * FROM Deals WHERE Id = 1;
+insert into Privileges(PrivilegeName,CreatedBy,CreatedAt) values('StageUpdate',1,GETUTCDATE());
+insert into Privileges(PrivilegeName,CreatedBy,CreatedAt) values('CreateDeal',1,GETUTCDATE());
+ 
+INSERT INTO UsersPrivileges (UserId, PrivilegeId, CreatedBy, CreatedAt) VALUES (5, 5, 1, GETUTCDATE()),(5, 6, 1, GETUTCDATE());
 
 
 

@@ -8,19 +8,12 @@ using XLead_Server.Services;
 
 
 var builder = WebApplication.CreateBuilder(args);
-//builder.Services.AddControllers(options =>
-//{
-//    options.Filters.Add<ApiResponseFilter>();
-//});
-builder.Services.AddCors(options =>
+builder.Services.AddControllers().AddJsonOptions(options => { options.JsonSerializerOptions.PropertyNameCaseInsensitive = true; });
+builder.Services.AddControllers(options =>
 {
-    options.AddPolicy("AllowAngularApp",
-        policy => policy
-            .WithOrigins("http://localhost:4200") 
-            .AllowAnyMethod()
-            .AllowAnyHeader()
-            .AllowCredentials());
-});
+    options.Filters.Add<ApiResponseWrapperFilter>();
+})
+.AddJsonOptions(options => { options.JsonSerializerOptions.PropertyNameCaseInsensitive = true; });
 
 builder.Services.AddHttpClient("GeminiClient");
 
@@ -34,11 +27,30 @@ builder.Services.AddCors(options =>
               .AllowAnyHeader();
     });
 });
-builder.Services.AddControllers();
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAngularApp",
+        policy => policy
+            .WithOrigins("http://localhost:4200") 
+            .AllowAnyMethod()
+            .AllowAnyHeader()
+            .AllowCredentials());
+});
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", policy =>
+    {
+        policy.AllowAnyOrigin()
+              .AllowAnyMethod()
+              .AllowAnyHeader();
+    });
+});
 
 builder.Services.AddDbContext<ApiDbContext>(option =>
     option.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
-builder.Services.AddControllers();
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
@@ -63,11 +75,9 @@ builder.Services.AddScoped<IDomainRepository, DomainRepository>();
 builder.Services.AddScoped<IDealStageRepository, DealStageRepository>();
 builder.Services.AddScoped<IRegionRepository, RegionRepository>();
 
-builder.Services.AddHttpClient("OpenAIClient", client =>
-{
-    // BaseAddress could be set here if endpoint is fixed, but AiQueryGeneratorService uses full path
-    // client.Timeout = TimeSpan.FromSeconds(60); // Optional: set a default timeout
-});
+builder.Services.AddHttpClient("GeminiClient");
+
+builder.Services.Configure<GeminiSettings>(builder.Configuration.GetSection("GeminiSettings"));
 
 builder.Services.AddAutoMapper(typeof(Program));
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
@@ -117,3 +127,4 @@ app.MapControllers();
 
 app.Run();
 
+public partial class Program { }

@@ -9,7 +9,6 @@ namespace XLead_Server.DTOs
         public string CustomerName { get; set; }
 
         [StringLength(2083)]
-        [Url(ErrorMessage = "Invalid website URL format.")]
         public string? Website { get; set; }
 
         [Required]

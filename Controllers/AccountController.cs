@@ -1,10 +1,8 @@
-﻿
-using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using XLead_Server.Interfaces;
-
 using XLead_Server.Models;
 
 namespace XLead_Server.Controllers

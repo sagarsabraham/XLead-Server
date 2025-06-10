@@ -26,11 +26,15 @@ builder.Services.AddCors(options =>
               .AllowAnyHeader();
     });
 });
-builder.Services.AddControllers();
 
 builder.Services.AddDbContext<ApiDbContext>(option =>
     option.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
-builder.Services.AddControllers();
+builder.Services.AddControllers(
+    options =>
+{
+    options.Filters.Add<ApiResponseWrapperFilter>();
+}
+);
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
@@ -109,3 +113,4 @@ app.MapControllers();
 
 app.Run();
 
+public partial class Program { }

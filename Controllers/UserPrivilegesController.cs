@@ -25,8 +25,8 @@ namespace XLead_Server.Controllers
         {
             var privileges = await _userPrivilegeRepository.GetPrivilegesByUserIdAsync(userId);
 
-           
-            if (privileges == null)
+
+            if (privileges == null || !privileges.Any())
             {
                 return NotFound($"Privileges for user ID {userId} not found or user does not exist.");
             }

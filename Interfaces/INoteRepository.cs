@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
 using XLead_Server.DTOs;
+using static XLead_Server.DTOs.NoteDto;
 
 namespace XLead_Server.Interfaces
 {

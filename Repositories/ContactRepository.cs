@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using XLead_Server.Data;
 using XLead_Server.DTOs;
+using XLead_Server.Helpers;
 using XLead_Server.Interfaces;
 
 
@@ -20,10 +21,47 @@ namespace XLead_Server.Repositories
             _context = context;
             _mapper = mapper;
         }
-
-        public async Task<Contact> AddContactAsync(ContactCreateDto dto)
+        private async Task ValidateGlobalContactUniqueness(string email, string phoneNumber, long? contactIdToExclude = null)
         {
-            Console.WriteLine($"Received Designation: {dto.Designation}");
+            
+            if (!string.IsNullOrWhiteSpace(email))
+            {
+                var normalizedEmail = email.Trim().ToUpper();
+                var contactEmailQuery = _context.Contacts.AsQueryable();
+                if (contactIdToExclude.HasValue) contactEmailQuery = contactEmailQuery.Where(c => c.Id != contactIdToExclude.Value);
+
+                if (await contactEmailQuery.AnyAsync(c => c.Email.ToUpper() == normalizedEmail))
+                {
+                    throw new ArgumentException($"The email '{email}' is already in use by another contact.");
+                }
+            }
+
+        
+            if (!string.IsNullOrWhiteSpace(phoneNumber))
+            {
+                var normalizedPhone = NormalizationHelper.NormalizePhoneNumber(phoneNumber);
+
+                var contactPhoneQuery = _context.Contacts.AsQueryable();
+                if (contactIdToExclude.HasValue) contactPhoneQuery = contactPhoneQuery.Where(c => c.Id != contactIdToExclude.Value);
+                if (await contactPhoneQuery.AnyAsync(c => EF.Functions.Like(c.PhoneNumber.Replace("-", "").Replace("(", "").Replace(")", "").Replace(" ", ""), $"%{normalizedPhone}%")))
+                {
+                    throw new ArgumentException($"The phone number '{phoneNumber}' is already in use by another contact.");
+                }
+
+                
+                if (await _context.Customers.AnyAsync(c => EF.Functions.Like(c.CustomerPhoneNumber.Replace("-", "").Replace("(", "").Replace(")", "").Replace(" ", ""), $"%{normalizedPhone}%")))
+                {
+                    throw new ArgumentException($"The phone number '{phoneNumber}' is already in use by a customer.");
+                }
+            }
+        }
+
+       
+        public async Task<Contact> AddContactAsync(ContactCreateDto dto)
+
+        {
+            await ValidateGlobalContactUniqueness(dto.Email, dto.PhoneNumber);
+           
             var contact = _mapper.Map<Contact>(dto);
             contact.CreatedAt = DateTime.UtcNow;
             contact.IsActive = true;
@@ -35,8 +73,7 @@ namespace XLead_Server.Repositories
 
         public async Task<IEnumerable<ContactReadDto>> GetAllContactsAsync()
         {
-            // FIX: Filter out records where IsHidden is explicitly true.
-            // This correctly includes records where IsHidden is false or null.
+            
             var contacts = await _context.Contacts
                 .Where(c => c.IsHidden != true)
                 .ToListAsync();
@@ -60,6 +97,7 @@ namespace XLead_Server.Repositories
                 return null;
             }
 
+            await ValidateGlobalContactUniqueness(dto.Email, dto.PhoneNumber, id);
 
             existingContact.FirstName = dto.FirstName;
             existingContact.LastName = dto.LastName;
@@ -67,23 +105,14 @@ namespace XLead_Server.Repositories
             existingContact.Email = dto.Email;
             existingContact.PhoneNumber = dto.PhoneNumber;
             existingContact.IsActive = dto.IsActive;
-
-
             existingContact.UpdatedAt = DateTime.UtcNow;
+            existingContact.UpdatedBy = dto.UpdatedBy;
 
 
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateException ex)
-            {
-
-                Console.WriteLine(ex.ToString());
-                throw;
-            }
-
+            await _context.SaveChangesAsync();
             return existingContact;
+
+            
         }
 
         public async Task<Contact?> SoftDeleteContactAsync(long id)

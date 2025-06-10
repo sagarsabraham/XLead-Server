@@ -41,15 +41,16 @@ namespace XLead_Server.Controllers
             {
                 var result = await _customerService.AddCustomerAsync(dto);
                 var resultDto = _mapper.Map<CustomerReadDto>(result);
-                return Ok(resultDto);
+                return Ok(resultDto); // Returns 200 OK
             }
             catch (ArgumentException ex)
             {
-                return BadRequest(ex.Message);
+                // This will now catch the "duplicate customer" error
+                return BadRequest(new { message = ex.Message });
             }
         }
 
-       
+
         [HttpPost("contact")]
         public async Task<IActionResult> AddContact([FromBody] ContactCreateDto dto)
         {
@@ -72,7 +73,8 @@ namespace XLead_Server.Controllers
             }
             catch (ArgumentException ex)
             {
-                return BadRequest(ex.Message);
+                // This will now catch the "duplicate email/phone" error
+                return BadRequest(new { message = ex.Message });
             }
         }
 
@@ -115,8 +117,14 @@ namespace XLead_Server.Controllers
                 }
                 return Ok(_mapper.Map<CustomerReadDto>(updatedCustomer));
             }
+            catch (ArgumentException ex)
+            {
+                // Catch duplicate name on update
+                return BadRequest(new { message = ex.Message });
+            }
             catch (Exception ex)
             {
+                // General error
                 return StatusCode(500, new { message = "An internal error occurred.", details = ex.Message });
             }
         }
@@ -185,5 +193,4 @@ namespace XLead_Server.Controllers
     }
 
 }
- 
-    
+

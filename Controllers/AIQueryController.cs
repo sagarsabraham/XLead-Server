@@ -10,6 +10,11 @@ using Microsoft.Extensions.Options;
 using XLead_Server.Configuration;
 using System.Net.Http;
 using System.Text.Json;
+using System.Collections.Generic;
+using System.Text;
+using Microsoft.Graph.Models.Security;
+using Microsoft.SqlServer.Dac.Model;
+using System.Reflection.Emit;
 
 namespace XLead_Server.Controllers
 {
@@ -101,20 +106,27 @@ namespace XLead_Server.Controllers
                 if (queryResult.RecordsAffected > 0 && queryResult.Data != null && queryResult.Data.Any())
                 {
                     var dataSample = queryResult.Data.Take(5).ToList();
-                    var jsonDataSample = JsonSerializer.Serialize(dataSample, new JsonSerializerOptions { WriteIndented = true });
 
-                    _logger.LogInformation("Requesting AI to summarize data sample.");
+                    var anonymizedSample = AnonymizeDataWithPlaceholders(dataSample);
+                    var jsonDataSample = JsonSerializer.Serialize(anonymizedSample, new JsonSerializerOptions { WriteIndented = true });
 
-                    string summary = await _aiQueryGenerator.SummarizeDataAsync(
+                    _logger.LogInformation("Requesting AI to summarize anonymized data sample with placeholders.");
+
+                    string summaryTemplate = await _aiQueryGenerator.SummarizeDataAsync(
                         request.NaturalLanguageQuery,
                         jsonDataSample,
-                        dataSample.Count,
+                        anonymizedSample.Count,
                         queryResult.RecordsAffected
                     );
 
-                    finalMessage = !string.IsNullOrWhiteSpace(summary)
-                        ? summary
-                        : $"Successfully retrieved {queryResult.RecordsAffected} record(s). A user-friendly summary could not be generated at this time.";
+                    if (!string.IsNullOrWhiteSpace(summaryTemplate))
+                    {
+                        finalMessage = RehydrateSummary(summaryTemplate, dataSample);
+                    }
+                    else
+                    {
+                        finalMessage = $"Successfully retrieved {queryResult.RecordsAffected} record(s). A user-friendly summary could not be generated at this time.";
+                    }
                 }
                 else
                 {
@@ -137,26 +149,80 @@ namespace XLead_Server.Controllers
             }
         }
 
-        [HttpGet("list-available-models")]
-        public async Task<IActionResult> ListAvailableModels()
+        private List<Dictionary<string, object>> AnonymizeDataWithPlaceholders(List<Dictionary<string, object>> data)
         {
-            if (string.IsNullOrWhiteSpace(_geminiSettings.ApiKey)) return BadRequest("Gemini API Key is not configured.");
-            var client = _httpClientFactory.CreateClient("GeminiClient");
-            var listModelsUrl = $"https://generativelanguage.googleapis.com/v1beta/models?key={_geminiSettings.ApiKey}";
-            try
+            var piiColumns = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
             {
-                var response = await client.GetAsync(listModelsUrl);
-                var content = await response.Content.ReadAsStringAsync();
-                if (!response.IsSuccessStatusCode)
+                //"FirstName", "LastName", "Email", "PhoneNumber", "ContactName", "Address", "Description",
+                //    // Business-specific proprietary data
+                //"DealName", "CustomerName", "CompanyName", "AccountName", "ProjectName",
+
+                //// Financial Data
+                //"DealAmount", "Amount", "Price", "Salary", "Revenue",
+
+                //// Free-text fields that might contain sensitive info
+                //"Description", "Notes", "Comment", "CustomFields",
+
+                //// Internal IDs that you might want to hide
+                //"ContactId", "AccountId", "UserId", "CreatedBy", "UpdatedBy"
+            };
+
+            var anonymizedData = new List<Dictionary<string, object>>();
+            for (int i = 0; i < data.Count; i++)
+            {
+                var originalRow = data[i];
+                var newRow = new Dictionary<string, object>();
+                foreach (var kvp in originalRow)
                 {
-                    return StatusCode((int)response.StatusCode, new { message = "Failed to list models.", details = content });
+                    if (piiColumns.Contains(kvp.Key))
+                    {
+                        newRow[kvp.Key] = $"{{{{RECORD_{i}_{kvp.Key.ToUpper()}}}}}";
+                    }
+                    else
+                    {
+                        newRow[kvp.Key] = kvp.Value;
+                    }
                 }
-                return Content(content, "application/json");
+                anonymizedData.Add(newRow);
             }
-            catch (Exception ex)
+            return anonymizedData;
+        }
+
+        private string RehydrateSummary(string summaryTemplate, List<Dictionary<string, object>> originalData)
+        {
+            var piiColumns = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
             {
-                return StatusCode(500, new { message = "An unexpected error occurred.", details = ex.Message });
+                
+               " FirstName", "LastName", "Email", "PhoneNumber", "ContactName", "Address", "City", "State", "ZipCode",
+
+                // Business-specific proprietary data
+                "DealName", "CustomerName", "CompanyName", "AccountName", "ProjectName",
+
+                // Financial Data
+                "DealAmount", "Amount", "Price", "Salary", "Revenue",
+
+                // Free-text fields that might contain sensitive info
+                "Description", "Notes", "Comment", "CustomFields",
+
+                // Internal IDs that you might want to hide
+                "ContactId", "AccountId", "UserId", "CreatedBy", "UpdatedBy"
+            };
+
+            var sb = new StringBuilder(summaryTemplate);
+            for (int i = 0; i < originalData.Count; i++)
+            {
+                var originalRow = originalData[i];
+                foreach (var kvp in originalRow)
+                {
+                    if (piiColumns.Contains(kvp.Key))
+                    {
+                        string placeholder = $"{{{{RECORD_{i}_{kvp.Key.ToUpper()}}}}}";
+                        string originalValue = kvp.Value?.ToString() ?? "";
+                        sb.Replace(placeholder, originalValue);
+                    }
+                }
             }
+            return sb.ToString();
         }
     }
 }

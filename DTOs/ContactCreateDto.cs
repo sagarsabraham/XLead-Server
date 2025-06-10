@@ -16,11 +16,16 @@ namespace XLead_Server.DTOs
         [EmailAddress]
         public string Email { get; set; }
 
+        [Required]
         [StringLength(50)]
-        public string? PhoneNumber { get; set; }
+        [RegularExpression(@"^[\d\s\-\(\)\+]+$", ErrorMessage = "Phone number contains invalid characters.")]
+        public string PhoneNumber { get; set; }
 
+        [Required]
         [StringLength(100)]
-        public string? Designation { get; set; }
+        // Regex asserts that the string is not composed ONLY of digits.
+        [RegularExpression(@"^(?!^\d+$).*", ErrorMessage = "Designation cannot consist only of numbers.")]
+        public string Designation { get; set; }
 
         [Required]
         [StringLength(255)]

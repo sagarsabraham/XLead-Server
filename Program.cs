@@ -8,7 +8,10 @@ using XLead_Server.Services;
 
 
 var builder = WebApplication.CreateBuilder(args);
-
+//builder.Services.AddControllers(options =>
+//{
+//    options.Filters.Add<ApiResponseFilter>();
+//});
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAngularApp",

@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using XLead_Server.Data;
 using XLead_Server.DTOs;
+using XLead_Server.Helpers;
 using XLead_Server.Interfaces;
 using XLead_Server.Models;
 
@@ -19,11 +20,42 @@ namespace XLead_Server.Repositories
             _context = context;
             _mapper = mapper;
         }
+        private async Task ValidateGlobalUniqueness(CustomerCreateDto dto, long? customerIdToExclude = null)
+        {
 
+            if (!string.IsNullOrWhiteSpace(dto.CustomerPhoneNumber))
+            {
+                var normalizedPhone = NormalizationHelper.NormalizePhoneNumber(dto.CustomerPhoneNumber);
+
+                var customerPhoneQuery = _context.Customers.AsQueryable();
+                if (customerIdToExclude.HasValue) customerPhoneQuery = customerPhoneQuery.Where(c => c.Id != customerIdToExclude.Value);
+                if (await customerPhoneQuery.AnyAsync(c => EF.Functions.Like(c.CustomerPhoneNumber.Replace("-", "").Replace("(", "").Replace(")", "").Replace(" ", ""), $"%{normalizedPhone}%"))) // Example of in-DB normalization
+                {
+                    throw new ArgumentException($"The phone number '{dto.CustomerPhoneNumber}' is already in use by another customer.");
+                }
+
+
+                if (await _context.Contacts.AnyAsync(c => EF.Functions.Like(c.PhoneNumber.Replace("-", "").Replace("(", "").Replace(")", "").Replace(" ", ""), $"%{normalizedPhone}%")))
+                {
+                    throw new ArgumentException($"The phone number '{dto.CustomerPhoneNumber}' is already in use by a contact.");
+                }
+            }
+
+
+            if (!string.IsNullOrWhiteSpace(dto.Website))
+            {
+                var normalizedWebsite = NormalizationHelper.NormalizeWebsite(dto.Website);
+                var customerWebsiteQuery = _context.Customers.AsQueryable();
+                if (customerIdToExclude.HasValue) customerWebsiteQuery = customerWebsiteQuery.Where(c => c.Id != customerIdToExclude.Value);
+                if (await customerWebsiteQuery.AnyAsync(c => c.Website != null && c.Website.ToLower() == normalizedWebsite))
+                {
+                    throw new ArgumentException($"The website '{dto.Website}' is already in use by another customer.");
+                }
+            }
+        }
         public async Task<IEnumerable<CustomerReadDto>> GetAllCustomersAsync()
         {
-            // FIX: Filter out records where IsHidden is explicitly true.
-            // This correctly includes records where IsHidden is false or null.
+
             var customers = await _context.Customers
                 .Where(c => c.IsHidden != true)
                 .ToListAsync();
@@ -32,6 +64,11 @@ namespace XLead_Server.Repositories
 
         public async Task<Customer> AddCustomerAsync(CustomerCreateDto dto)
         {
+            var normalizedName = dto.CustomerName.Trim().ToUpper();
+            if (await _context.Customers.AnyAsync(c => c.CustomerName.ToUpper() == normalizedName))
+            {
+                throw new ArgumentException($"A customer with the name '{dto.CustomerName}' already exists.");
+            }
             // Validate IndustryVerticalId if provided
             if (dto.IndustryVerticalId.HasValue)
             {
@@ -42,7 +79,7 @@ namespace XLead_Server.Repositories
                     throw new ArgumentException("Invalid IndustryVerticalId");
                 }
             }
-
+            await ValidateGlobalUniqueness(dto);
             var customer = _mapper.Map<Customer>(dto);
             customer.IsActive = true;
             customer.CreatedBy = dto.CreatedBy;
@@ -76,62 +113,63 @@ namespace XLead_Server.Repositories
                 }
             );
         }
+        // ... (rest of the file is the same)
         public async Task<Customer?> UpdateCustomerAsync(long id, CustomerUpdateDto dto)
-
         {
-
             var existingCustomer = await _context.Customers
-
                 .Include(c => c.Contacts)
-
                 .FirstOrDefaultAsync(c => c.Id == id);
 
             if (existingCustomer == null)
-
             {
-
                 return null;
-
             }
+
+            var normalizedName = dto.CustomerName.Trim().ToUpper();
+            if (await _context.Customers.AnyAsync(c => c.Id != id && c.CustomerName.ToUpper() == normalizedName))
+            {
+                throw new ArgumentException($"Another customer with the name '{dto.CustomerName}' already exists.");
+            }
+
+            var checkDto = new CustomerCreateDto
+            {
+                CustomerPhoneNumber = dto.PhoneNo,
+                Website = dto.Website
+            };
+            await ValidateGlobalUniqueness(checkDto, id);
 
             bool wasActive = existingCustomer.IsActive;
 
-            _mapper.Map(dto, existingCustomer);
+            existingCustomer.CustomerName = dto.CustomerName;
+            existingCustomer.CustomerPhoneNumber = dto.PhoneNo;
+            existingCustomer.Website = dto.Website;
 
-
-
-            existingCustomer.UpdatedAt = DateTime.UtcNow;
-
-
-
-
-            if (wasActive != existingCustomer.IsActive)
-
+            // FIX: Check if the DTO has a value before assigning it to the non-nullable entity property.
+            // If the DTO sends null, the existing value on the customer record will be preserved.
+            if (dto.IndustryVerticalId.HasValue)
             {
-
-                bool newStatus = existingCustomer.IsActive;
-
-                foreach (var contact in existingCustomer.Contacts)
-
-                {
-
-                    contact.IsActive = newStatus;
-
-
-
-                    contact.UpdatedAt = DateTime.UtcNow;
-
-                }
-
+                existingCustomer.IndustryVerticalId = dto.IndustryVerticalId.Value;
             }
 
+            existingCustomer.IsActive = dto.IsActive;
+            existingCustomer.UpdatedAt = DateTime.UtcNow;
+            existingCustomer.UpdatedBy = dto.UpdatedBy;
 
+            if (wasActive != existingCustomer.IsActive)
+            {
+                bool newStatus = existingCustomer.IsActive;
+                foreach (var contact in existingCustomer.Contacts)
+                {
+                    contact.IsActive = newStatus;
+                    contact.UpdatedAt = DateTime.UtcNow;
+                }
+            }
 
             await _context.SaveChangesAsync();
-
             return existingCustomer;
-
         }
+// ... (rest of the file is the same)
+        
 
         public async Task<Customer?> SoftDeleteCustomerAsync(long id)
 

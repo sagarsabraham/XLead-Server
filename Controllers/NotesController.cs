@@ -1,16 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-
-using System.Threading.Tasks;
-
-using System.Linq;
-
-using XLead_Server.DTOs;
-
 using XLead_Server.Interfaces;
-
-using Microsoft.Extensions.Logging;
-
-using System.Collections.Generic;
+using static XLead_Server.DTOs.NoteDto;
 
 namespace XLead_Server.Controllers
 

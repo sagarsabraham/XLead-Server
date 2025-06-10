@@ -2,6 +2,8 @@
 
 namespace XLead_Server.DTOs
 {
+    public class NoteDto
+    {
     public class NoteCreateDto
     {
         public string NoteText { get; set; }
@@ -27,4 +29,5 @@ namespace XLead_Server.DTOs
         public string NoteText { get; set; }
         public long UpdatedBy { get; set; }
     }
+}
 }

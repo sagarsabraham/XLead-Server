@@ -7,7 +7,7 @@ namespace XLead_Server.Interfaces
 {
     public interface IContactRepository
     {
-       
+
         Task<Contact> AddContactAsync(ContactCreateDto dto);
         Task<IEnumerable<ContactReadDto>> GetAllContactsAsync();
         Task<Contact?> GetByFullNameAndCustomerIdAsync(string firstName, string? lastName, long customerId);

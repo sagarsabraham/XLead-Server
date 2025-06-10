@@ -8,6 +8,7 @@ using XLead_Server.Data;
 using XLead_Server.DTOs;
 using XLead_Server.Interfaces;
 using XLead_Server.Models;
+using static XLead_Server.DTOs.NoteDto;
 namespace XLead_Server.Repositories
 {
     public class NoteRepository : INoteRepository

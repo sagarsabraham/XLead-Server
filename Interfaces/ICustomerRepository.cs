@@ -15,4 +15,4 @@ namespace XLead_Server.Interfaces
 
         Task<Customer?> SoftDeleteCustomerAsync(long id);
     }
-}   
+}

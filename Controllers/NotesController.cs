@@ -5,6 +5,7 @@ using XLead_Server.DTOs;
 using XLead_Server.Interfaces;
 using Microsoft.Extensions.Logging;
 using System.Collections.Generic;
+
 namespace XLead_Server.Controllers
 {
     [ApiController]
@@ -18,7 +19,6 @@ namespace XLead_Server.Controllers
         public NotesController(
             INoteRepository noteRepository,
             IUserPrivilegeRepository userPrivilegeRepository,
-
             ILogger<NotesController> logger)
         {
             _noteRepository = noteRepository;
@@ -26,12 +26,11 @@ namespace XLead_Server.Controllers
             _logger = logger;
         }
 
-
         [HttpPost]
-        [ProducesResponseType(typeof(NoteReadDto), 201)]
+        [ProducesResponseType(typeof(NoteDto.NoteReadDto), 201)]
         [ProducesResponseType(400)]
         [ProducesResponseType(403)]
-        public async Task<ActionResult<NoteReadDto>> CreateNote([FromBody] NoteCreateDto dto)
+        public async Task<ActionResult<NoteDto.NoteReadDto>> CreateNote([FromBody] NoteDto.NoteCreateDto dto) // Changed parameters and return type
         {
             _logger.LogInformation($"Creating note for deal {dto.DealId} by user {dto.CreatedBy}");
 
@@ -56,7 +55,6 @@ namespace XLead_Server.Controllers
 
                 return CreatedAtAction(nameof(GetNote), new { id = createdNote.Id }, createdNote);
             }
-
             catch (System.Exception ex)
             {
                 _logger.LogError(ex, "Error creating note");
@@ -64,11 +62,10 @@ namespace XLead_Server.Controllers
             }
         }
 
-
         [HttpGet("{id}")]
-        [ProducesResponseType(typeof(NoteReadDto), 200)]
+        [ProducesResponseType(typeof(NoteDto.NoteReadDto), 200)]
         [ProducesResponseType(404)]
-        public async Task<ActionResult<NoteReadDto>> GetNote(long id)
+        public async Task<ActionResult<NoteDto.NoteReadDto>> GetNote(long id)
         {
             _logger.LogInformation($"Fetching note with ID {id}");
 
@@ -82,11 +79,10 @@ namespace XLead_Server.Controllers
             return Ok(note);
         }
 
-
         [HttpGet("deal/{dealId}")]
-        [ProducesResponseType(typeof(IEnumerable<NoteReadDto>), 200)]
+        [ProducesResponseType(typeof(IEnumerable<NoteDto.NoteReadDto>), 200)]
         [ProducesResponseType(403)]
-        public async Task<ActionResult<IEnumerable<NoteReadDto>>> GetNotesByDeal(long dealId, [FromQuery] long userId)
+        public async Task<ActionResult<IEnumerable<NoteDto.NoteReadDto>>> GetNotesByDeal(long dealId, [FromQuery] long userId) // Changed return type
         {
             _logger.LogInformation($"User {userId} fetching notes for deal {dealId}");
 
@@ -98,7 +94,6 @@ namespace XLead_Server.Controllers
                 return Forbid("User lacks the required privilege to view notes.");
             }
 
-            // The rest of the method remains the same
             try
             {
                 var notes = await _noteRepository.GetNotesByDealIdAsync(dealId);
@@ -112,17 +107,15 @@ namespace XLead_Server.Controllers
             }
         }
 
-
         [HttpPut("{id}")]
-        [ProducesResponseType(typeof(NoteReadDto), 200)]
+        [ProducesResponseType(typeof(NoteDto.NoteReadDto), 200)]
         [ProducesResponseType(404)]
         [ProducesResponseType(403)]
-        public async Task<ActionResult<NoteReadDto>> UpdateNote(long id, [FromBody] NoteUpdateDto dto)
+        public async Task<ActionResult<NoteDto.NoteReadDto>> UpdateNote(long id, [FromBody] NoteDto.NoteUpdateDto dto)
         {
             _logger.LogInformation($"User {dto.UpdatedBy} updating note {id}");
             var privileges = await _userPrivilegeRepository.GetPrivilegesByUserIdAsync((int)dto.UpdatedBy);
             if (!privileges.Any(p => p.PrivilegeName == "UpdateNote" || p.PrivilegeName == "PipelineDetailAccess"))
-
             {
                 _logger.LogWarning($"User {dto.UpdatedBy} lacks UpdateNote privilege");
                 return Forbid("User lacks UpdateNote privilege");
@@ -145,15 +138,12 @@ namespace XLead_Server.Controllers
                 _logger.LogInformation($"Note {id} updated successfully");
                 return Ok(updatedNote);
             }
-
             catch (System.Exception ex)
             {
                 _logger.LogError(ex, $"Error updating note {id}");
-
                 return StatusCode(500, "An error occurred while updating the note");
             }
         }
-
 
         [HttpDelete("{id}")]
         [ProducesResponseType(204)]
@@ -183,18 +173,16 @@ namespace XLead_Server.Controllers
                 return NoContent();
             }
             catch (System.Exception ex)
-            { 
+            {
                 _logger.LogError(ex, $"Error deleting note {id}");
                 return StatusCode(500, "An error occurred while deleting the note");
             }
         }
 
-
         [HttpGet("test")]
         public IActionResult Test()
         {
             _logger.LogInformation("Notes controller test endpoint called");
-
             return Ok(new { message = "Notes controller is working", timestamp = System.DateTime.UtcNow });
         }
     }

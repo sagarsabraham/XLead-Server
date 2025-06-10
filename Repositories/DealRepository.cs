@@ -39,7 +39,28 @@ namespace XLead_Server.Repositories
             _mapper = mapper;
             _logger = logger;
         }
+        private async Task ValidateDealUniqueness(string title, decimal amount, long contactId, long? dealIdToExclude = null)
+        {
+            var normalizedTitle = title.Trim().ToUpper();
 
+            var query = _context.Deals.AsQueryable();
+
+            if (dealIdToExclude.HasValue)
+            {
+                // Exclude self when updating
+                query = query.Where(d => d.Id != dealIdToExclude.Value);
+            }
+
+            bool isDuplicate = await query.AnyAsync(d =>
+                d.DealName.ToUpper() == normalizedTitle &&
+                d.DealAmount == amount &&
+                d.ContactId == contactId);
+
+            if (isDuplicate)
+            {
+                throw new InvalidOperationException("A deal with the same title, amount, and contact already exists.");
+            }
+        }
         public async Task<DealReadDto?> AddDealAsync(DealCreateDto dto)
         {
 
@@ -116,6 +137,7 @@ namespace XLead_Server.Repositories
             {
                 throw new InvalidOperationException($"Contact '{dto.ContactFullName}' for customer '{customer.CustomerName}' has an invalid ID after creation/retrieval.");
             }
+            await ValidateDealUniqueness(dto.Title, dto.Amount, contact.Id);
 
             var deal = _mapper.Map<Deal>(dto);
             deal.ContactId = contact.Id;
@@ -657,7 +679,7 @@ namespace XLead_Server.Repositories
             {
                 throw new InvalidOperationException($"Contact '{dto.ContactFullName}' for customer '{customer.CustomerName}' has an invalid ID after creation/retrieval.");
             }
-
+            await ValidateDealUniqueness(dto.Title, dto.Amount, contact.Id, id);
             deal.DealName = dto.Title;
             deal.DealAmount = dto.Amount;
             deal.AccountId = dto.AccountId ?? deal.AccountId;
@@ -674,7 +696,7 @@ namespace XLead_Server.Repositories
             deal.ClosingDate = dto.ClosingDate ?? deal.ClosingDate;
             deal.ContactId = contact.Id;
             deal.UpdatedAt = DateTime.UtcNow;
-
+          
             _context.Deals.Update(deal);
             await _context.SaveChangesAsync();
 

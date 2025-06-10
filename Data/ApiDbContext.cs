@@ -1,6 +1,8 @@
 ﻿using System.Diagnostics.Metrics;
 using System.Net.Mail;
+using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 using XLead_Server.Interfaces;
 using XLead_Server.Models;
 using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
@@ -60,6 +62,23 @@ namespace XLead_Server.Data
                 .WithMany(u => u.CreatedAccounts)
                 .HasForeignKey(a => a.CreatedBy)
                 .OnDelete(DeleteBehavior.Restrict);
+            });
+            modelBuilder.Entity<Note>(entity =>
+            {
+                entity.HasOne(n => n.Deal)
+                .WithMany(d => d.Notes)
+                .HasForeignKey(n => n.DealId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(n => n.Creator)
+                    .WithMany(u => u.CreatedNotes)
+                    .HasForeignKey(n => n.CreatedBy)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(n => n.Updater)
+                    .WithMany(u => u.UpdatedNotes)
+                    .HasForeignKey(n => n.UpdatedBy)
+                    .OnDelete(DeleteBehavior.Restrict);
             });
 
             //Note Relationships
@@ -332,6 +351,8 @@ namespace XLead_Server.Data
                 .HasForeignKey(d => d.RevenueTypeId)
                 .OnDelete(DeleteBehavior.Restrict);
             });
+
+   
         }
     }
 }

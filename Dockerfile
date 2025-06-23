@@ -19,4 +19,4 @@ COPY --from=build /app/out .
 EXPOSE 7259
 
 # Set entry point
-ENTRYPOINT ["dotnet", "XLead-Server.dll"]
+ENTRYPOINT ["dotnet", "XLead Server.dll"]

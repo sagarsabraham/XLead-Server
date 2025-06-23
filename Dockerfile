@@ -15,6 +15,9 @@ FROM mcr.microsoft.com/dotnet/aspnet:6.0 AS runtime
 WORKDIR /app
 COPY --from=build /app/out .
 
+# Create the UploadedFiles directory
+RUN mkdir -p /app/UploadedFiles
+
 # Expose port
 EXPOSE 7259
 
